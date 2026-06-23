@@ -14,7 +14,7 @@ const mockUser = {
 
 class MockServerQueryBuilder {
   private tableName: string;
-  private filters: { field: string; value: any }[] = [];
+  private filters: { field: string; value: any; operator?: string }[] = [];
 
   constructor(tableName: string) {
     this.tableName = tableName;
@@ -22,6 +22,16 @@ class MockServerQueryBuilder {
 
   eq(field: string, value: any) {
     this.filters.push({ field, value });
+    return this;
+  }
+
+  gte(field: string, value: any) {
+    this.filters.push({ field, value, operator: "gte" });
+    return this;
+  }
+
+  lte(field: string, value: any) {
+    this.filters.push({ field, value, operator: "lte" });
     return this;
   }
 
@@ -54,6 +64,25 @@ class MockServerQueryBuilder {
       resolve({ data: matches ? [profile] : [], error: null });
       return;
     }
+
+    if (this.tableName === "synced_busy_blocks") {
+      const busyStr = cookieStore.get("mock_busy_blocks")?.value;
+      let busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+
+      const filtered = busyBlocks.filter((row: any) => {
+        return this.filters.every(filter => {
+          if (filter.operator === "gte") {
+            return new Date(row[filter.field]) >= new Date(filter.value);
+          }
+          if (filter.operator === "lte") {
+            return new Date(row[filter.field]) <= new Date(filter.value);
+          }
+          return row[filter.field] === filter.value;
+        });
+      });
+      resolve({ data: filtered, error: null });
+      return;
+    }
     
     resolve({ data: [], error: null });
   }
@@ -80,6 +109,69 @@ class MockServerQueryBuilder {
       
       return {
         then: (resolve: any) => resolve({ data: [updated], error: null })
+      };
+    }
+    return {
+      then: (resolve: any) => resolve({ data: [], error: null })
+    };
+  }
+
+  delete() {
+    const cookieStore = cookies();
+    if (this.tableName === "synced_busy_blocks") {
+      const busyStr = cookieStore.get("mock_busy_blocks")?.value;
+      let busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+
+      const remaining = busyBlocks.filter((row: any) => {
+        const matches = this.filters.every(filter => {
+          if (filter.operator === "gte") {
+            return new Date(row[filter.field]) >= new Date(filter.value);
+          }
+          if (filter.operator === "lte") {
+            return new Date(row[filter.field]) <= new Date(filter.value);
+          }
+          return row[filter.field] === filter.value;
+        });
+        return !matches;
+      });
+
+      try {
+        cookieStore.set("mock_busy_blocks", JSON.stringify(remaining), { path: "/" });
+      } catch (err) {}
+
+      return {
+        then: (resolve: any) => resolve({ data: remaining, error: null })
+      };
+    }
+    return {
+      then: (resolve: any) => resolve({ data: [], error: null })
+    };
+  }
+
+  insert(values: any | any[]) {
+    const cookieStore = cookies();
+    if (this.tableName === "synced_busy_blocks") {
+      const busyStr = cookieStore.get("mock_busy_blocks")?.value;
+      let busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+
+      const rowsToInsert = Array.isArray(values) ? values : [values];
+      const inserted = rowsToInsert.map(row => ({
+        id: Math.random().toString(36).substring(2),
+        last_synced_at: new Date().toISOString(),
+        ...row
+      }));
+
+      busyBlocks.push(...inserted);
+
+      try {
+        cookieStore.set("mock_busy_blocks", JSON.stringify(busyBlocks), { path: "/" });
+      } catch (err) {}
+
+      return {
+        select: () => ({
+          then: (resolve: any) => resolve({ data: inserted, error: null })
+        }),
+        then: (resolve: any) => resolve({ data: inserted, error: null })
       };
     }
     return {

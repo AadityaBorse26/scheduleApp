@@ -57,7 +57,7 @@ class MockDeleteBuilder {
 
 class MockQueryBuilder {
   private tableName: string;
-  private filters: { field: string; value: any }[] = [];
+  private filters: { field: string; value: any; operator?: string }[] = [];
 
   constructor(tableName: string) {
     this.tableName = tableName;
@@ -108,6 +108,16 @@ class MockQueryBuilder {
     return this;
   }
 
+  gte(field: string, value: any) {
+    this.filters.push({ field, value, operator: 'gte' });
+    return this;
+  }
+
+  lte(field: string, value: any) {
+    this.filters.push({ field, value, operator: 'lte' });
+    return this;
+  }
+
   order(field: string, { ascending = true } = {}) {
     return this;
   }
@@ -141,6 +151,33 @@ class MockQueryBuilder {
         resolve({ data: matches ? [profile] : [], error: null });
         return;
       }
+
+      if (this.tableName === 'synced_busy_blocks') {
+        const getCookie = (name: string) => {
+          if (typeof window === 'undefined') return undefined;
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return undefined;
+        };
+        const busyStr = getCookie('mock_busy_blocks');
+        let busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
+
+        const filtered = busyBlocks.filter((row: any) => {
+          return this.filters.every(filter => {
+            if (filter.operator === 'gte') {
+              return new Date(row[filter.field]) >= new Date(filter.value);
+            }
+            if (filter.operator === 'lte') {
+              return new Date(row[filter.field]) <= new Date(filter.value);
+            }
+            return row[filter.field] === filter.value;
+          });
+        });
+        resolve({ data: filtered, error: null });
+        return;
+      }
+
       const data = this.executeSelect();
       resolve({ data, error: null });
     } catch (err: any) {
@@ -157,6 +194,31 @@ class MockQueryBuilder {
   }
 
   insert(values: any | any[]) {
+    if (this.tableName === 'synced_busy_blocks') {
+      const getCookie = (name: string) => {
+        if (typeof window === 'undefined') return undefined;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return undefined;
+      };
+      const busyStr = getCookie('mock_busy_blocks');
+      let busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
+
+      const rowsToInsert = Array.isArray(values) ? values : [values];
+      const inserted = rowsToInsert.map(row => ({
+        id: Math.random().toString(36).substring(2),
+        last_synced_at: new Date().toISOString(),
+        ...row
+      }));
+      busyBlocks.push(...inserted);
+
+      if (typeof window !== 'undefined') {
+        document.cookie = `mock_busy_blocks=${encodeURIComponent(JSON.stringify(busyBlocks))}; path=/;`;
+      }
+      return new MockInsertBuilder(inserted);
+    }
+
     const data = this.getData();
     const rowsToInsert = Array.isArray(values) ? values : [values];
     const insertedRows = rowsToInsert.map(row => ({
@@ -208,6 +270,48 @@ class MockQueryBuilder {
   }
 
   delete() {
+    if (this.tableName === 'synced_busy_blocks') {
+      const getCookie = (name: string) => {
+        if (typeof window === 'undefined') return undefined;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return undefined;
+      };
+      const busyStr = getCookie('mock_busy_blocks');
+      let busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
+
+      const remaining = busyBlocks.filter((row: any) => {
+        const matches = this.filters.every(filter => {
+          if (filter.operator === 'gte') {
+            return new Date(row[filter.field]) >= new Date(filter.value);
+          }
+          if (filter.operator === 'lte') {
+            return new Date(row[filter.field]) <= new Date(filter.value);
+          }
+          return row[filter.field] === filter.value;
+        });
+        return !matches;
+      });
+
+      const deletedRows = busyBlocks.filter((row: any) => {
+        return this.filters.every(filter => {
+          if (filter.operator === 'gte') {
+            return new Date(row[filter.field]) >= new Date(filter.value);
+          }
+          if (filter.operator === 'lte') {
+            return new Date(row[filter.field]) <= new Date(filter.value);
+          }
+          return row[filter.field] === filter.value;
+        });
+      });
+
+      if (typeof window !== 'undefined') {
+        document.cookie = `mock_busy_blocks=${encodeURIComponent(JSON.stringify(remaining))}; path=/;`;
+      }
+      return new MockDeleteBuilder(deletedRows);
+    }
+
     const data = this.getData();
     const deletedRows: any[] = [];
     const remainingData = data.filter(row => {

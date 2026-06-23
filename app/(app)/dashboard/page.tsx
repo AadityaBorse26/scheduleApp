@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import SyncButton from "./SyncButton";
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -67,15 +68,16 @@ export default async function DashboardPage() {
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed mb-6">
+            <p className="text-xs text-slate-400 leading-relaxed mb-4">
               {isSyncActive
                 ? "Google Calendar is actively connected. Busy time blocks are automatically imported to protect you from scheduling overlaps."
                 : "Calendar sync is currently inactive. Set up Google Calendar to overlay your schedules and avoid double bookings."}
             </p>
+            <SyncButton userId={user.id} isSyncActive={isSyncActive} />
           </div>
           <Link
             href="/settings"
-            className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-slate-100 transition-colors"
+            className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-slate-100 transition-colors mt-6"
           >
             {isSyncActive ? "Configure Integration" : "Connect Calendar"}
           </Link>
