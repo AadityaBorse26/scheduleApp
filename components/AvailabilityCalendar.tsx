@@ -294,28 +294,28 @@ export default function AvailabilityCalendar() {
     <div className="flex flex-col h-full">
 
       {/* ── Sticky Toolbar ──────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-4 py-2 flex items-center gap-2 flex-wrap">
+      <div className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-5 py-3 flex items-center gap-3 flex-wrap">
 
         {/* Title */}
-        <span className="text-sm font-semibold text-slate-200 min-w-[140px]">{titleText}</span>
+        <span className="text-sm font-semibold text-slate-200 min-w-[160px]">{titleText}</span>
 
         {/* Nav */}
-        <div className="flex items-center gap-1">
-          <button onClick={() => navigate("prev")} className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center justify-center text-sm">‹</button>
-          <button onClick={() => navigate("next")} className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center justify-center text-sm">›</button>
-          <button onClick={() => navigate("today")} className="h-7 px-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs font-medium">Today</button>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => navigate("prev")} className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center justify-center text-base">‹</button>
+          <button onClick={() => navigate("next")} className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all flex items-center justify-center text-base">›</button>
+          <button onClick={() => navigate("today")} className="h-9 px-4 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition-all text-xs font-medium">Today</button>
         </div>
 
         {/* Divider */}
-        <div className="h-5 w-px bg-slate-800 mx-1" />
+        <div className="h-6 w-px bg-slate-800 mx-0.5" />
 
         {/* View toggle */}
-        <div className="flex items-center gap-0.5 bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+        <div className="flex items-center gap-0.5 bg-slate-900 border border-slate-800 rounded-lg p-1">
           {VIEWS.map(v => (
             <button
               key={v.key}
               onClick={() => changeView(v.key)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+              className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-all ${
                 currentView === v.key
                   ? "bg-indigo-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
@@ -325,12 +325,12 @@ export default function AvailabilityCalendar() {
         </div>
 
         {/* Divider */}
-        <div className="h-5 w-px bg-slate-800 mx-1" />
+        <div className="h-6 w-px bg-slate-800 mx-0.5" />
 
         {/* Show full day toggle */}
         <button
           onClick={() => setShowFullDay(f => !f)}
-          className={`h-7 px-2.5 rounded-lg border text-xs font-medium transition-all ${
+          className={`h-9 px-4 rounded-lg border text-xs font-medium transition-all ${
             showFullDay
               ? "bg-indigo-600/20 border-indigo-500/40 text-indigo-300"
               : "bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300"
@@ -343,14 +343,14 @@ export default function AvailabilityCalendar() {
         <div className="relative">
           <button
             onClick={() => setShowLegend(l => !l)}
-            className="h-7 px-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-slate-300 text-xs font-medium transition-all"
+            className="h-9 px-4 rounded-lg bg-slate-900 border border-slate-800 text-slate-500 hover:text-slate-300 text-xs font-medium transition-all"
           >
             ℹ️ Legend
           </button>
           {showLegend && (
-            <div className="absolute top-9 left-0 z-50 bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-2xl shadow-black/60 flex flex-col gap-2 min-w-[180px]">
+            <div className="absolute top-11 left-0 z-50 bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-2xl shadow-black/60 flex flex-col gap-2.5 min-w-[190px]">
               {LEGEND.map(l => (
-                <span key={l.label} className="flex items-center gap-2 text-[11px] text-slate-400">
+                <span key={l.label} className="flex items-center gap-2.5 text-xs text-slate-400">
                   <span className={`w-3.5 h-3.5 rounded border shrink-0 ${l.color}`} />
                   {l.label}
                 </span>
@@ -365,7 +365,7 @@ export default function AvailabilityCalendar() {
         {/* Actions */}
         <Link
           href="/availability/recurring"
-          className="h-7 px-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium transition-all hover:bg-slate-800"
+          className="h-9 px-4 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium transition-all hover:bg-slate-800 flex items-center"
         >
           🗓️ Weekly Pattern
         </Link>
