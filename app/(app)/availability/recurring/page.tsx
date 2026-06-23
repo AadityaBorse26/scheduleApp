@@ -9,44 +9,37 @@ const RecurringCalendar = dynamic(
 
 export default function RecurringAvailabilityPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden">
-      {/* Decorative background gradients */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-900/10 blur-[120px] pointer-events-none" />
+    <div className="flex flex-col space-y-8 animate-fade-in">
+      {/* Navigation Breadcrumb */}
+      <div className="flex items-center space-x-2 text-xs text-slate-500">
+        <Link href="/dashboard" className="hover:text-slate-300 transition-colors">Dashboard</Link>
+        <span>/</span>
+        <span className="text-slate-350">Recurring Availability</span>
+      </div>
 
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
-        
-        {/* Navigation Breadcrumb */}
-        <div className="flex items-center space-x-2 text-sm text-slate-500 mb-6">
-          <Link href="/" className="hover:text-slate-300 transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/dashboard" className="hover:text-slate-300 transition-colors">Dashboard</Link>
-          <span>/</span>
-          <span className="text-slate-300">Recurring Availability</span>
-        </div>
-
-        {/* Title Section */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-slate-200 to-slate-400">
+      {/* Title Section */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 pb-6 border-b border-slate-900">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-300">
             My Weekly Pattern
           </h1>
-          
-          {/* Explainer Callout Card */}
-          <div className="p-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 backdrop-blur-md max-w-3xl flex items-start space-x-4 shadow-md shadow-indigo-500/5">
-            <span className="text-2xl mt-0.5">🗓️</span>
-            <div>
-              <p className="text-sm text-slate-300 font-medium leading-relaxed">
-                This is your normal week. We&apos;ll layer your real Google Calendar and one-off changes on top of this automatically.
-              </p>
-            </div>
-          </div>
+          <p className="text-sm text-slate-400 mt-1">
+            Specify your recurring default availability blocks on the interactive weekly calendar.
+          </p>
         </div>
+        
+        {/* Explainer Callout Card */}
+        <div className="p-4 rounded-2xl border border-indigo-500/10 bg-indigo-500/5 max-w-md flex items-start space-x-3 text-xs leading-relaxed text-indigo-300 shadow-md">
+          <span className="text-lg">🗓️</span>
+          <p>
+            This is your normal week. We&apos;ll layer your real Google Calendar and one-off changes on top of this automatically.
+          </p>
+        </div>
+      </div>
 
-        {/* Interactive Calendar Component */}
-        <div className="mt-8">
-          <RecurringCalendar />
-        </div>
+      {/* Interactive Calendar Component */}
+      <div className="mt-2">
+        <RecurringCalendar />
       </div>
     </div>
   );
