@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function AvailabilityPage() {
-  redirect("/availability/recurring");
+  redirect("/availability/calendar");
 }

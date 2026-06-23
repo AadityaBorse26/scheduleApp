@@ -14,7 +14,9 @@ export default function RecurringAvailabilityPage() {
       <div className="flex items-center space-x-2 text-xs text-slate-500">
         <Link href="/dashboard" className="hover:text-slate-300 transition-colors">Dashboard</Link>
         <span>/</span>
-        <span className="text-slate-350">Recurring Availability</span>
+        <Link href="/availability/calendar" className="hover:text-slate-300 transition-colors">Availability Calendar</Link>
+        <span>/</span>
+        <span className="text-slate-355">Weekly Pattern</span>
       </div>
 
       {/* Title Section */}

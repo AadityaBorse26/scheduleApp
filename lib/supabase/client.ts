@@ -178,6 +178,26 @@ class MockQueryBuilder {
         return;
       }
 
+      if (this.tableName === 'date_overrides') {
+        const getCookie = (name: string) => {
+          if (typeof window === 'undefined') return undefined;
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return undefined;
+        };
+        const overridesStr = getCookie('mock_overrides');
+        let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+
+        const filtered = overrides.filter((row: any) => {
+          return this.filters.every(filter => {
+            return row[filter.field] === filter.value;
+          });
+        });
+        resolve({ data: filtered, error: null });
+        return;
+      }
+
       const data = this.executeSelect();
       resolve({ data, error: null });
     } catch (err: any) {
@@ -219,6 +239,39 @@ class MockQueryBuilder {
       return new MockInsertBuilder(inserted);
     }
 
+    if (this.tableName === 'date_overrides') {
+      const getCookie = (name: string) => {
+        if (typeof window === 'undefined') return undefined;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return undefined;
+      };
+      const overridesStr = getCookie('mock_overrides');
+      let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+
+      const rowsToInsert = Array.isArray(values) ? values : [values];
+      const inserted = rowsToInsert.map(row => ({
+        id: Math.random().toString(36).substring(2),
+        ...row
+      }));
+      overrides.push(...inserted);
+
+      if (typeof window !== 'undefined') {
+        document.cookie = `mock_overrides=${encodeURIComponent(JSON.stringify(overrides))}; path=/;`;
+      }
+      
+      const builder = new MockInsertBuilder(inserted);
+      // We want select().single() mock chain support on insertion return
+      (builder as any).select = () => ({
+        single: () => ({
+          then: (resolve: any) => resolve({ data: inserted[0], error: null })
+        }),
+        then: (resolve: any) => resolve({ data: inserted, error: null })
+      });
+      return builder;
+    }
+
     const data = this.getData();
     const rowsToInsert = Array.isArray(values) ? values : [values];
     const insertedRows = rowsToInsert.map(row => ({
@@ -254,6 +307,35 @@ class MockQueryBuilder {
       }
       return new MockUpdateBuilder([updated]);
     }
+
+    if (this.tableName === 'date_overrides') {
+      const getCookie = (name: string) => {
+        if (typeof window === 'undefined') return undefined;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return undefined;
+      };
+      const overridesStr = getCookie('mock_overrides');
+      let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+      const updatedRows: any[] = [];
+
+      const modified = overrides.map((row: any) => {
+        const matches = this.filters.every(filter => row[filter.field] === filter.value);
+        if (matches) {
+          const updated = { ...row, ...values };
+          updatedRows.push(updated);
+          return updated;
+        }
+        return row;
+      });
+
+      if (typeof window !== 'undefined') {
+        document.cookie = `mock_overrides=${encodeURIComponent(JSON.stringify(modified))}; path=/;`;
+      }
+      return new MockUpdateBuilder(updatedRows);
+    }
+
     const data = this.getData();
     const updatedRows: any[] = [];
     const modifiedData = data.map(row => {
@@ -308,6 +390,32 @@ class MockQueryBuilder {
 
       if (typeof window !== 'undefined') {
         document.cookie = `mock_busy_blocks=${encodeURIComponent(JSON.stringify(remaining))}; path=/;`;
+      }
+      return new MockDeleteBuilder(deletedRows);
+    }
+
+    if (this.tableName === 'date_overrides') {
+      const getCookie = (name: string) => {
+        if (typeof window === 'undefined') return undefined;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return undefined;
+      };
+      const overridesStr = getCookie('mock_overrides');
+      let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+
+      const remaining = overrides.filter((row: any) => {
+        const matches = this.filters.every(filter => row[filter.field] === filter.value);
+        return !matches;
+      });
+
+      const deletedRows = overrides.filter((row: any) => {
+        return this.filters.every(filter => row[filter.field] === filter.value);
+      });
+
+      if (typeof window !== 'undefined') {
+        document.cookie = `mock_overrides=${encodeURIComponent(JSON.stringify(remaining))}; path=/;`;
       }
       return new MockDeleteBuilder(deletedRows);
     }

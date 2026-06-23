@@ -83,6 +83,19 @@ class MockServerQueryBuilder {
       resolve({ data: filtered, error: null });
       return;
     }
+
+    if (this.tableName === "date_overrides") {
+      const overridesStr = cookieStore.get("mock_overrides")?.value;
+      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+      
+      const filtered = overrides.filter((row: any) => {
+        return this.filters.every(filter => {
+          return row[filter.field] === filter.value;
+        });
+      });
+      resolve({ data: filtered, error: null });
+      return;
+    }
     
     resolve({ data: [], error: null });
   }
@@ -111,6 +124,31 @@ class MockServerQueryBuilder {
         then: (resolve: any) => resolve({ data: [updated], error: null })
       };
     }
+
+    if (this.tableName === "date_overrides") {
+      const overridesStr = cookieStore.get("mock_overrides")?.value;
+      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+      const updatedRows: any[] = [];
+
+      const modified = overrides.map((row: any) => {
+        const matches = this.filters.every(filter => row[filter.field] === filter.value);
+        if (matches) {
+          const updated = { ...row, ...values };
+          updatedRows.push(updated);
+          return updated;
+        }
+        return row;
+      });
+
+      try {
+        cookieStore.set("mock_overrides", JSON.stringify(modified), { path: "/" });
+      } catch (err) {}
+
+      return {
+        then: (resolve: any) => resolve({ data: updatedRows, error: null })
+      };
+    }
+
     return {
       then: (resolve: any) => resolve({ data: [], error: null })
     };
@@ -143,6 +181,29 @@ class MockServerQueryBuilder {
         then: (resolve: any) => resolve({ data: remaining, error: null })
       };
     }
+
+    if (this.tableName === "date_overrides") {
+      const overridesStr = cookieStore.get("mock_overrides")?.value;
+      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+
+      const remaining = overrides.filter((row: any) => {
+        const matches = this.filters.every(filter => row[filter.field] === filter.value);
+        return !matches;
+      });
+
+      const deleted = overrides.filter((row: any) => {
+        return this.filters.every(filter => row[filter.field] === filter.value);
+      });
+
+      try {
+        cookieStore.set("mock_overrides", JSON.stringify(remaining), { path: "/" });
+      } catch (err) {}
+
+      return {
+        then: (resolve: any) => resolve({ data: deleted, error: null })
+      };
+    }
+
     return {
       then: (resolve: any) => resolve({ data: [], error: null })
     };
@@ -174,6 +235,37 @@ class MockServerQueryBuilder {
         then: (resolve: any) => resolve({ data: inserted, error: null })
       };
     }
+
+    if (this.tableName === "date_overrides") {
+      const overridesStr = cookieStore.get("mock_overrides")?.value;
+      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+
+      const rowsToInsert = Array.isArray(values) ? values : [values];
+      const inserted = rowsToInsert.map(row => ({
+        id: Math.random().toString(36).substring(2),
+        ...row
+      }));
+
+      overrides.push(...inserted);
+
+      try {
+        cookieStore.set("mock_overrides", JSON.stringify(overrides), { path: "/" });
+      } catch (err) {}
+
+      return {
+        select: () => ({
+          single: () => ({
+            then: (resolve: any) => resolve({ data: inserted[0], error: null })
+          }),
+          then: (resolve: any) => resolve({ data: inserted, error: null })
+        }),
+        single: () => ({
+          then: (resolve: any) => resolve({ data: inserted[0], error: null })
+        }),
+        then: (resolve: any) => resolve({ data: inserted, error: null })
+      };
+    }
+
     return {
       then: (resolve: any) => resolve({ data: [], error: null })
     };
