@@ -81,8 +81,8 @@ export default async function SettingsPage() {
                 </div>
                 <h3 className="text-sm font-semibold text-slate-200">{item.title}</h3>
                 <p className="text-xs text-slate-500 leading-relaxed mt-1">{item.desc}</p>
-                {item.href !== "#" && (
-                  <Link href={item.href} className="inline-block mt-2 text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                {item.action.href !== "#" && (
+                  <Link href={item.action.href} className="inline-block mt-2 text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
                     {item.action.label}
                   </Link>
                 )}
