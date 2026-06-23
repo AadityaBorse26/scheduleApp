@@ -7,6 +7,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { supabase } from "@/lib/supabase/client";
+import { toast } from "@/components/Toast";
+import CalendarSkeleton from "@/components/CalendarSkeleton";
 
 interface Profile {
   id: string;
@@ -36,6 +38,18 @@ export default function GroupCalendar() {
   const [selectedSlot, setSelectedSlot] = useState<OverlapSlot | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // 1. Fetch all profiles once on mount
   useEffect(() => {
     async function loadProfiles() {
@@ -48,9 +62,11 @@ export default function GroupCalendar() {
           setProfiles(data);
         } else if (error) {
           console.error("Error loading profiles:", error);
+          toast("Failed to retrieve coordinator profiles.", "error");
         }
       } catch (err) {
         console.error("Unexpected profiles error:", err);
+        toast("An error occurred loading group workspace.", "error");
       } finally {
         setIsLoading(false);
       }
@@ -77,9 +93,11 @@ export default function GroupCalendar() {
           setOverlapSlots(data);
         } else {
           console.error("Overlap API returned non-array:", data);
+          toast("Invalid response from schedule data endpoint.", "error");
         }
       } catch (err) {
         console.error("Overlap fetch error:", err);
+        toast("Error fetching group overlaps calendar.", "error");
       } finally {
         setIsFetching(false);
       }
@@ -169,7 +187,7 @@ export default function GroupCalendar() {
       calendarApi.gotoDate(date);
       // Switch to timeGridDay or timeGridWeek to display time details clearly
       if (calendarApi.view.type === "dayGridMonth") {
-        calendarApi.changeView("timeGridWeek");
+        calendarApi.changeView(isMobile ? "timeGridDay" : "timeGridWeek");
       }
     }
   };
@@ -210,18 +228,13 @@ export default function GroupCalendar() {
   }, [selectedSlot, profiles]);
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[600px] border border-slate-900 rounded-3xl bg-slate-900/10 backdrop-blur-sm">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
-        <p className="text-sm text-slate-400 font-semibold">Loading group coordination workspace...</p>
-      </div>
-    );
+    return <CalendarSkeleton />;
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
       {/* 1. Left Heatmap Calendar View */}
-      <div className="lg:col-span-3 relative border border-slate-900 rounded-3xl p-6 bg-slate-900/10 backdrop-blur-sm shadow-2xl">
+      <div className="lg:col-span-3 relative border border-slate-900 rounded-3xl p-6 bg-slate-900/10 backdrop-blur-sm shadow-2xl overflow-x-auto">
         {isFetching && (
           <div className="absolute top-4 right-4 flex items-center space-x-2 bg-slate-950/80 border border-indigo-500/20 text-indigo-400 text-xs px-3 py-1.5 rounded-full z-[100] animate-pulse shadow-md">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
@@ -255,9 +268,10 @@ export default function GroupCalendar() {
         </div>
 
         <FullCalendar
+          key={isMobile ? "mobile" : "desktop"}
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
+          initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
           headerToolbar={{
             left: "prev,next today",
             center: "title",
@@ -300,7 +314,7 @@ export default function GroupCalendar() {
                   <button
                     key={`sidebar-slot-${slot.slotStart}`}
                     onClick={() => handleJumpToSlot(slot.slotStart)}
-                    className="w-full text-left p-3.5 rounded-2xl border border-slate-850 bg-slate-900/20 hover:bg-slate-850 hover:border-slate-700 transition-all duration-200 group hover:-translate-y-0.5 active:scale-98 flex items-center justify-between"
+                    className="w-full text-left p-3.5 rounded-2xl border border-slate-850 bg-slate-900/20 hover:bg-slate-855 hover:border-slate-750 transition-all duration-200 group hover:-translate-y-0.5 active:scale-98 flex items-center justify-between"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center space-x-1.5">

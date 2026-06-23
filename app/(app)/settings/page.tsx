@@ -17,9 +17,6 @@ export default async function SettingsPage() {
     .eq("id", user.id)
     .single();
 
-  const calendarSyncEnabled = profile?.calendar_sync_enabled ?? false;
-  const hasRefreshToken = !!profile?.google_refresh_token;
-
   return (
     <div className="flex flex-col space-y-8 animate-fade-in">
       <div>
@@ -32,8 +29,8 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsForm 
-        initialSyncEnabled={calendarSyncEnabled} 
-        hasRefreshToken={hasRefreshToken} 
+        profile={profile || null}
+        email={user.email || ""}
       />
     </div>
   );

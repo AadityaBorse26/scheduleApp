@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { syncGoogleCalendar } from "@/lib/google/sync";
 
 export async function POST(
-  request: Request,
+  _request: Request,
   { params }: { params: { userId: string } }
 ) {
   const targetUserId = params.userId;

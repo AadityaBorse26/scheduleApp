@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, prefer-const, @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,7 +22,7 @@ const mockUser = {
   }
 };
 
-class MockInsertBuilder {
+export class MockInsertBuilder {
   private insertedRows: any[];
   constructor(insertedRows: any[]) {
     this.insertedRows = insertedRows;
@@ -35,7 +35,7 @@ class MockInsertBuilder {
   }
 }
 
-class MockUpdateBuilder {
+export class MockUpdateBuilder {
   private updatedRows: any[];
   constructor(updatedRows: any[]) {
     this.updatedRows = updatedRows;
@@ -45,7 +45,7 @@ class MockUpdateBuilder {
   }
 }
 
-class MockDeleteBuilder {
+export class MockDeleteBuilder {
   private deletedRows: any[];
   constructor(deletedRows: any[]) {
     this.deletedRows = deletedRows;
@@ -117,7 +117,7 @@ const extraMockPatterns = [
   { id: "pat-karen-2", user_id: "mock-user-karen-2222-3333-444444444444", day_of_week: 3, start_time: "12:00:00", end_time: "17:00:00" }
 ];
 
-class MockQueryBuilder {
+export class MockQueryBuilder {
   private tableName: string;
   private filters: { field: string; value: any; operator?: string }[] = [];
   private isSingle: boolean = false;
@@ -165,7 +165,7 @@ class MockQueryBuilder {
     }
   }
 
-  select(columns: string = '*') {
+  select(_columns: string = '*') {
     return this;
   }
 
@@ -184,7 +184,7 @@ class MockQueryBuilder {
     return this;
   }
 
-  order(field: string, { ascending = true } = {}) {
+  order(_field: string, _options?: { ascending?: boolean }) {
     return this;
   }
 
@@ -204,13 +204,14 @@ class MockQueryBuilder {
           return undefined;
         };
         const profileStr = getCookie('mock_profile');
-        let profile = profileStr ? JSON.parse(decodeURIComponent(profileStr)) : {
+        const profile = profileStr ? JSON.parse(decodeURIComponent(profileStr)) : {
           id: mockUser.id,
           name: mockUser.raw_user_meta_data.full_name,
           avatar_url: mockUser.raw_user_meta_data.avatar_url,
           timezone: 'America/Los_Angeles',
           google_refresh_token: null,
-          calendar_sync_enabled: false
+          calendar_sync_enabled: false,
+          last_synced_at: null
         };
         
         const allProfiles = [profile, ...extraMockProfiles];
@@ -234,7 +235,7 @@ class MockQueryBuilder {
           return undefined;
         };
         const busyStr = getCookie('mock_busy_blocks');
-        let busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
+        const busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
 
         const filtered = busyBlocks.filter((row: any) => {
           return this.filters.every(filter => {
@@ -263,7 +264,7 @@ class MockQueryBuilder {
           return undefined;
         };
         const overridesStr = getCookie('mock_overrides');
-        let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+        const overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
 
         const filtered = overrides.filter((row: any) => {
           return this.filters.every(filter => {
@@ -308,7 +309,7 @@ class MockQueryBuilder {
         return undefined;
       };
       const busyStr = getCookie('mock_busy_blocks');
-      let busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
+      const busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
 
       const rowsToInsert = Array.isArray(values) ? values : [values];
       const inserted = rowsToInsert.map(row => ({
@@ -333,7 +334,7 @@ class MockQueryBuilder {
         return undefined;
       };
       const overridesStr = getCookie('mock_overrides');
-      let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+      const overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
 
       const rowsToInsert = Array.isArray(values) ? values : [values];
       const inserted = rowsToInsert.map(row => ({
@@ -378,13 +379,14 @@ class MockQueryBuilder {
         return undefined;
       };
       const profileStr = getCookie('mock_profile');
-      let profile = profileStr ? JSON.parse(decodeURIComponent(profileStr)) : {
+      const profile = profileStr ? JSON.parse(decodeURIComponent(profileStr)) : {
         id: mockUser.id,
         name: mockUser.raw_user_meta_data.full_name,
         avatar_url: mockUser.raw_user_meta_data.avatar_url,
         timezone: 'America/Los_Angeles',
         google_refresh_token: null,
-        calendar_sync_enabled: false
+        calendar_sync_enabled: false,
+        last_synced_at: null
       };
       const updated = { ...profile, ...values };
       if (typeof window !== 'undefined') {
@@ -402,7 +404,7 @@ class MockQueryBuilder {
         return undefined;
       };
       const overridesStr = getCookie('mock_overrides');
-      let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+      const overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
       const updatedRows: any[] = [];
 
       const modified = overrides.map((row: any) => {
@@ -446,7 +448,7 @@ class MockQueryBuilder {
         return undefined;
       };
       const busyStr = getCookie('mock_busy_blocks');
-      let busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
+      const busyBlocks = busyStr ? JSON.parse(decodeURIComponent(busyStr)) : [];
 
       const remaining = busyBlocks.filter((row: any) => {
         const matches = this.filters.every(filter => {
@@ -488,7 +490,7 @@ class MockQueryBuilder {
         return undefined;
       };
       const overridesStr = getCookie('mock_overrides');
-      let overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
+      const overrides = overridesStr ? JSON.parse(decodeURIComponent(overridesStr)) : [];
 
       const remaining = overrides.filter((row: any) => {
         const matches = this.filters.every(filter => row[filter.field] === filter.value);
@@ -553,9 +555,9 @@ const mockAuth = {
     }
     return { data: { session: null }, error: null };
   },
-  signInWithOAuth: async (options: any) => {
-    console.log('Mock OAuth login initialized:', options);
-    const redirectTo = options?.options?.redirectTo || '/dashboard';
+  signInWithOAuth: async (_options: any) => {
+    console.log('Mock OAuth login initialized:', _options);
+    const redirectTo = _options?.options?.redirectTo || '/dashboard';
     const callbackUrl = `/auth/callback?code=mock_code&next=${encodeURIComponent(redirectTo)}`;
     return { data: { provider: 'google', url: callbackUrl }, error: null };
   },

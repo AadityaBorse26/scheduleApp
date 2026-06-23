@@ -7,6 +7,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { supabase } from "@/lib/supabase/client";
+import { toast } from "@/components/Toast";
+import CalendarSkeleton from "@/components/CalendarSkeleton";
 
 interface RecurringAvailability {
   id: string;
@@ -53,6 +55,18 @@ export default function AvailabilityCalendar() {
   const [activeOverride, setActiveOverride] = useState<{ id: string; status: "free" | "unavailable" } | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Fetch initial parameters
   useEffect(() => {
     async function loadCalendarData() {
@@ -98,7 +112,7 @@ export default function AvailabilityCalendar() {
   const events = useMemo(() => {
     const list: any[] = [];
 
-    // Layer 1: Syced Google Busy Blocks (Red, Read-Only, Non-Draggable)
+    // Layer 1: Synced Google Busy Blocks (Red, Read-Only, Non-Draggable)
     for (const block of busyBlocks) {
       list.push({
         id: `google-${block.id}`,
@@ -220,9 +234,10 @@ export default function AvailabilityCalendar() {
 
     if (error) {
       console.error("Error inserting date override:", error);
-      alert("Failed to save schedule override. Please try again.");
+      toast("Failed to save schedule override. Please try again.", "error");
     } else if (data) {
       setOverrides(prev => [...prev, data]);
+      toast("Date override created successfully!", "success");
     }
     setSelectedRange(null);
   };
@@ -262,7 +277,7 @@ export default function AvailabilityCalendar() {
 
     if (error) {
       console.error("Error updating override position:", error);
-      alert("Failed to save changes. Reverting schedule blocks.");
+      toast("Failed to update override position. Reverting changes.", "error");
       changeInfo.revert();
     } else {
       setOverrides(prev =>
@@ -272,6 +287,7 @@ export default function AvailabilityCalendar() {
             : row
         )
       );
+      toast("Override block repositioned successfully!", "success");
     }
   };
 
@@ -306,13 +322,14 @@ export default function AvailabilityCalendar() {
 
     if (error) {
       console.error("Error toggling override status:", error);
-      alert("Failed to toggle override status. Please try again.");
+      toast("Failed to toggle override status. Please try again.", "error");
     } else {
       setOverrides(prev =>
         prev.map(row =>
           row.id === activeOverride.id ? { ...row, status: newStatus } : row
         )
       );
+      toast(`Override changed to ${newStatus === "free" ? "Available" : "Unavailable"}.`, "success");
     }
     setActiveOverride(null);
   };
@@ -332,151 +349,164 @@ export default function AvailabilityCalendar() {
 
     if (error) {
       console.error("Error deleting override:", error);
-      alert("Failed to delete override. Please try again.");
+      toast("Failed to delete override. Please try again.", "error");
     } else {
       setOverrides(prev => prev.filter(row => row.id !== activeOverride.id));
+      toast("Override block removed.", "success");
     }
     setActiveOverride(null);
   };
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[600px] border border-slate-900 rounded-3xl bg-slate-900/10 backdrop-blur-sm">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
-        <p className="text-sm text-slate-400">Loading schedule layers...</p>
-      </div>
-    );
+    return <CalendarSkeleton />;
   }
 
   return (
-    <div className="relative border border-slate-900 rounded-3xl p-6 bg-slate-900/10 backdrop-blur-sm shadow-2xl">
-      {isSaving && (
-        <div className="absolute top-4 right-4 flex items-center space-x-2 bg-slate-950/80 border border-indigo-500/20 text-indigo-400 text-xs px-3 py-1.5 rounded-full z-[100] animate-pulse">
-          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-          <span>Saving overrides...</span>
-        </div>
-      )}
-
-      {/* Popover / Modal to Mark Selection */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">Create Date Override</h3>
-            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-              Mark this selected time range as available or unavailable for bookings. This will overlay on top of your default pattern and synced Google Calendar events.
+    <div className="space-y-4">
+      {/* Friendly empty weekly availability pattern state warnings */}
+      {patterns.length === 0 && (
+        <div className="p-5 rounded-3xl border border-amber-500/20 bg-amber-500/5 text-amber-300 text-xs leading-relaxed flex items-start space-x-3 animate-fade-in shadow-lg">
+          <span className="text-base mt-0.5">⚠️</span>
+          <div className="space-y-1">
+            <p className="font-bold">Weekly availability pattern not set up yet</p>
+            <p className="text-slate-400">
+              You haven&apos;t added default available slots. Without a recurring pattern, you will be shown as unavailable by default. 
+              Click <a href="/availability/recurring" className="text-indigo-400 hover:text-indigo-350 font-semibold underline">Edit Weekly Pattern</a> to configure your free hours.
             </p>
-            <div className="flex flex-col space-y-2.5">
-              <button
-                onClick={() => handleCreateOverride("free")}
-                className="w-full py-2.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-              >
-                Available (Free - Blue)
-              </button>
-              <button
-                onClick={() => handleCreateOverride("unavailable")}
-                className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-700 hover:bg-slate-650 text-slate-200 transition-colors"
-              >
-                Unavailable (Busy - Gray)
-              </button>
-              <button
-                onClick={() => {
-                  setIsCreateModalOpen(false);
-                  setSelectedRange(null);
-                  if (calendarRef.current) {
-                    calendarRef.current.getApi().unselect();
-                  }
-                }}
-                className="w-full py-2 rounded-xl text-xs font-semibold bg-slate-800/50 hover:bg-slate-800 text-slate-400 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Popover / Modal to Edit Override */}
-      {isEditModalOpen && activeOverride && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">Edit Override Block</h3>
-            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-              Currently marked as <span className="font-semibold text-slate-200">{activeOverride.status === "free" ? "Available" : "Unavailable"}</span>. Choose an action below:
-            </p>
-            <div className="flex flex-col space-y-2.5">
-              <button
-                onClick={handleToggleStatus}
-                className="w-full py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
-              >
-                Switch to {activeOverride.status === "free" ? "Unavailable" : "Available"}
-              </button>
-              <button
-                onClick={handleDeleteOverride}
-                className="w-full py-2.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors"
-              >
-                Delete Override Block
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditModalOpen(false);
-                  setActiveOverride(null);
-                }}
-                className="w-full py-2 rounded-xl text-xs font-semibold bg-slate-800/50 hover:bg-slate-800 text-slate-400 transition-colors"
-              >
-                Cancel
-              </button>
+      <div className="relative border border-slate-900 rounded-3xl p-6 bg-slate-900/10 backdrop-blur-sm shadow-2xl">
+        {isSaving && (
+          <div className="absolute top-4 right-4 flex items-center space-x-2 bg-slate-950/80 border border-indigo-500/20 text-indigo-400 text-xs px-3 py-1.5 rounded-full z-[100] animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+            <span>Saving...</span>
+          </div>
+        )}
+
+        {/* Popover / Modal to Mark Selection */}
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+              <h3 className="text-lg font-bold text-slate-100 mb-2">Create Date Override</h3>
+              <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                Mark this selected time range as available or unavailable for bookings. This will overlay on top of your default pattern and synced Google Calendar events.
+              </p>
+              <div className="flex flex-col space-y-2.5">
+                <button
+                  onClick={() => handleCreateOverride("free")}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                >
+                  Available (Free - Blue)
+                </button>
+                <button
+                  onClick={() => handleCreateOverride("unavailable")}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-700 hover:bg-slate-650 text-slate-200 transition-colors"
+                >
+                  Unavailable (Busy - Gray)
+                </button>
+                <button
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setSelectedRange(null);
+                    if (calendarRef.current) {
+                      calendarRef.current.getApi().unselect();
+                    }
+                  }}
+                  className="w-full py-2 rounded-xl text-xs font-semibold bg-slate-800/50 hover:bg-slate-800 text-slate-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="mb-6 flex flex-wrap gap-4 items-center justify-between text-xs text-slate-400 border-b border-slate-900 pb-4">
-        <span className="font-semibold text-slate-300">💡 Legend:</span>
-        <div className="flex flex-wrap gap-3.5">
-          <span className="flex items-center">
-            <span className="w-3.5 h-3.5 rounded bg-emerald-500/20 border border-emerald-500 mr-1.5"></span>
-            Weekly Pattern
-          </span>
-          <span className="flex items-center">
-            <span className="w-3.5 h-3.5 rounded bg-red-500/20 border border-red-500 mr-1.5"></span>
-            Google Calendar (Read-only)
-          </span>
-          <span className="flex items-center">
-            <span className="w-3.5 h-3.5 rounded bg-blue-500/20 border border-blue-500 mr-1.5"></span>
-            Override: Available
-          </span>
-          <span className="flex items-center">
-            <span className="w-3.5 h-3.5 rounded bg-slate-500/20 border border-slate-500 mr-1.5"></span>
-            Override: Unavailable
-          </span>
+        {/* Popover / Modal to Edit Override */}
+        {isEditModalOpen && activeOverride && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+              <h3 className="text-lg font-bold text-slate-100 mb-2">Edit Override Block</h3>
+              <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                Currently marked as <span className="font-semibold text-slate-200">{activeOverride.status === "free" ? "Available" : "Unavailable"}</span>. Choose an action below:
+              </p>
+              <div className="flex flex-col space-y-2.5">
+                <button
+                  onClick={handleToggleStatus}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+                >
+                  Switch to {activeOverride.status === "free" ? "Unavailable" : "Available"}
+                </button>
+                <button
+                  onClick={handleDeleteOverride}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white transition-colors"
+                >
+                  Delete Override Block
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setActiveOverride(null);
+                  }}
+                  className="w-full py-2 rounded-xl text-xs font-semibold bg-slate-800/50 hover:bg-slate-800 text-slate-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-6 flex flex-wrap gap-4 items-center justify-between text-xs text-slate-400 border-b border-slate-900 pb-4">
+          <span className="font-semibold text-slate-300">💡 Legend:</span>
+          <div className="flex flex-wrap gap-3.5">
+            <span className="flex items-center">
+              <span className="w-3.5 h-3.5 rounded bg-emerald-500/20 border border-emerald-500 mr-1.5"></span>
+              Weekly Pattern
+            </span>
+            <span className="flex items-center">
+              <span className="w-3.5 h-3.5 rounded bg-red-500/20 border border-red-500 mr-1.5"></span>
+              Google Calendar (Read-only)
+            </span>
+            <span className="flex items-center">
+              <span className="w-3.5 h-3.5 rounded bg-blue-500/20 border border-blue-500 mr-1.5"></span>
+              Override: Available
+            </span>
+            <span className="flex items-center">
+              <span className="w-3.5 h-3.5 rounded bg-slate-500/20 border border-slate-500 mr-1.5"></span>
+              Override: Unavailable
+            </span>
+          </div>
         </div>
+
+        <FullCalendar
+          key={isMobile ? "mobile" : "desktop"}
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
+          headerToolbar={{
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,timeGridDay",
+          }}
+          slotMinTime="06:00:00"
+          slotMaxTime="24:00:00"
+          allDaySlot={false}
+          editable={true}
+          selectable={true}
+          selectMirror={true}
+          events={events}
+          select={handleSelect}
+          selectAllow={handleSelectAllow}
+          eventDrop={handleEventChange}
+          eventResize={handleEventChange}
+          eventClick={handleEventClick}
+          datesSet={handleDatesSet}
+          height="auto"
+          timeZone="local"
+        />
       </div>
-
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek,timeGridDay",
-        }}
-        slotMinTime="06:00:00"
-        slotMaxTime="24:00:00"
-        allDaySlot={false}
-        editable={true}
-        selectable={true}
-        selectMirror={true}
-        events={events}
-        select={handleSelect}
-        selectAllow={handleSelectAllow}
-        eventDrop={handleEventChange}
-        eventResize={handleEventChange}
-        eventClick={handleEventClick}
-        datesSet={handleDatesSet}
-        height="auto"
-        timeZone="local"
-      />
     </div>
   );
 }

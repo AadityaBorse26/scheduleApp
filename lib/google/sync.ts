@@ -75,6 +75,12 @@ export async function syncGoogleCalendar(userId: string) {
       return { success: false, error: "Failed to save mock busy blocks." };
     }
 
+    // Update last_synced_at timestamp on user profile
+    await supabase
+      .from("profiles")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", userId);
+
     return { success: true, count: blocksToInsert.length };
   }
 
@@ -180,6 +186,12 @@ export async function syncGoogleCalendar(userId: string) {
         return { success: false, error: "Failed to persist synced busy blocks in database." };
       }
     }
+
+    // Update last_synced_at timestamp on user profile
+    await supabase
+      .from("profiles")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", userId);
 
     return { success: true, count: busyIntervals.length };
   } catch (err) {

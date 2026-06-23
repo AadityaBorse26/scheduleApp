@@ -2,10 +2,15 @@ import React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import CalendarSkeleton from "@/components/CalendarSkeleton";
+
 // Dynamically import the GroupCalendar component to bypass SSR hydration warnings with FullCalendar
 const GroupCalendar = dynamic(
   () => import("@/components/GroupCalendar"),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <CalendarSkeleton />
+  }
 );
 
 export default function GroupPage() {

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, prefer-const */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -74,7 +74,7 @@ const extraMockPatterns = [
   { id: "pat-karen-2", user_id: "mock-user-karen-2222-3333-444444444444", day_of_week: 3, start_time: "12:00:00", end_time: "17:00:00" }
 ];
 
-class MockServerQueryBuilder {
+export class MockServerQueryBuilder {
   private tableName: string;
   private filters: { field: string; value: any; operator?: string }[] = [];
   private isSingle: boolean = false;
@@ -98,7 +98,7 @@ class MockServerQueryBuilder {
     return this;
   }
 
-  select(columns: string = "*") {
+  select(_columns: string = "*") {
     return this;
   }
 
@@ -112,13 +112,14 @@ class MockServerQueryBuilder {
     
     if (this.tableName === "profiles") {
       const profileStr = cookieStore.get("mock_profile")?.value;
-      let profile = profileStr ? JSON.parse(profileStr) : {
+      const profile = profileStr ? JSON.parse(profileStr) : {
         id: mockUser.id,
         name: mockUser.raw_user_meta_data.full_name,
         avatar_url: mockUser.raw_user_meta_data.avatar_url,
         timezone: "America/Los_Angeles",
         google_refresh_token: null,
-        calendar_sync_enabled: false
+        calendar_sync_enabled: false,
+        last_synced_at: null
       };
       
       const allProfiles = [profile, ...extraMockProfiles];
@@ -135,7 +136,7 @@ class MockServerQueryBuilder {
 
     if (this.tableName === "recurring_availability") {
       const patternStr = cookieStore.get("mock_recurring_patterns")?.value;
-      let userPatterns = patternStr ? JSON.parse(patternStr) : [
+      const userPatterns = patternStr ? JSON.parse(patternStr) : [
         {
           id: "init-1",
           user_id: mockUser.id,
@@ -166,7 +167,7 @@ class MockServerQueryBuilder {
 
     if (this.tableName === "synced_busy_blocks") {
       const busyStr = cookieStore.get("mock_busy_blocks")?.value;
-      let busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+      const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
 
       const filtered = busyBlocks.filter((row: any) => {
         return this.filters.every(filter => {
@@ -188,7 +189,7 @@ class MockServerQueryBuilder {
 
     if (this.tableName === "date_overrides") {
       const overridesStr = cookieStore.get("mock_overrides")?.value;
-      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+      const overrides = overridesStr ? JSON.parse(overridesStr) : [];
       
       const filtered = overrides.filter((row: any) => {
         return this.filters.every(filter => {
@@ -209,19 +210,20 @@ class MockServerQueryBuilder {
     const cookieStore = cookies();
     if (this.tableName === "profiles") {
       const profileStr = cookieStore.get("mock_profile")?.value;
-      let profile = profileStr ? JSON.parse(profileStr) : {
+      const profile = profileStr ? JSON.parse(profileStr) : {
         id: mockUser.id,
         name: mockUser.raw_user_meta_data.full_name,
         avatar_url: mockUser.raw_user_meta_data.avatar_url,
         timezone: "America/Los_Angeles",
         google_refresh_token: null,
-        calendar_sync_enabled: false
+        calendar_sync_enabled: false,
+        last_synced_at: null
       };
 
       const updated = { ...profile, ...values };
       try {
         cookieStore.set("mock_profile", JSON.stringify(updated), { path: "/" });
-      } catch (err) {
+      } catch {
         // Cookies cannot always be set during server component rendering
       }
       
@@ -232,7 +234,7 @@ class MockServerQueryBuilder {
 
     if (this.tableName === "date_overrides") {
       const overridesStr = cookieStore.get("mock_overrides")?.value;
-      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+      const overrides = overridesStr ? JSON.parse(overridesStr) : [];
       const updatedRows: any[] = [];
 
       const modified = overrides.map((row: any) => {
@@ -247,7 +249,7 @@ class MockServerQueryBuilder {
 
       try {
         cookieStore.set("mock_overrides", JSON.stringify(modified), { path: "/" });
-      } catch (err) {}
+      } catch {}
 
       return {
         then: (resolve: any) => resolve({ data: updatedRows, error: null })
@@ -263,7 +265,7 @@ class MockServerQueryBuilder {
     const cookieStore = cookies();
     if (this.tableName === "synced_busy_blocks") {
       const busyStr = cookieStore.get("mock_busy_blocks")?.value;
-      let busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+      const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
 
       const remaining = busyBlocks.filter((row: any) => {
         const matches = this.filters.every(filter => {
@@ -280,7 +282,7 @@ class MockServerQueryBuilder {
 
       try {
         cookieStore.set("mock_busy_blocks", JSON.stringify(remaining), { path: "/" });
-      } catch (err) {}
+      } catch {}
 
       return {
         then: (resolve: any) => resolve({ data: remaining, error: null })
@@ -289,7 +291,7 @@ class MockServerQueryBuilder {
 
     if (this.tableName === "date_overrides") {
       const overridesStr = cookieStore.get("mock_overrides")?.value;
-      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+      const overrides = overridesStr ? JSON.parse(overridesStr) : [];
 
       const remaining = overrides.filter((row: any) => {
         const matches = this.filters.every(filter => row[filter.field] === filter.value);
@@ -302,7 +304,7 @@ class MockServerQueryBuilder {
 
       try {
         cookieStore.set("mock_overrides", JSON.stringify(remaining), { path: "/" });
-      } catch (err) {}
+      } catch {}
 
       return {
         then: (resolve: any) => resolve({ data: deleted, error: null })
@@ -318,7 +320,7 @@ class MockServerQueryBuilder {
     const cookieStore = cookies();
     if (this.tableName === "synced_busy_blocks") {
       const busyStr = cookieStore.get("mock_busy_blocks")?.value;
-      let busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+      const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
 
       const rowsToInsert = Array.isArray(values) ? values : [values];
       const inserted = rowsToInsert.map(row => ({
@@ -331,7 +333,7 @@ class MockServerQueryBuilder {
 
       try {
         cookieStore.set("mock_busy_blocks", JSON.stringify(busyBlocks), { path: "/" });
-      } catch (err) {}
+      } catch {}
 
       return {
         select: () => ({
@@ -343,7 +345,7 @@ class MockServerQueryBuilder {
 
     if (this.tableName === "date_overrides") {
       const overridesStr = cookieStore.get("mock_overrides")?.value;
-      let overrides = overridesStr ? JSON.parse(overridesStr) : [];
+      const overrides = overridesStr ? JSON.parse(overridesStr) : [];
 
       const rowsToInsert = Array.isArray(values) ? values : [values];
       const inserted = rowsToInsert.map(row => ({
@@ -355,7 +357,7 @@ class MockServerQueryBuilder {
 
       try {
         cookieStore.set("mock_overrides", JSON.stringify(overrides), { path: "/" });
-      } catch (err) {}
+      } catch {}
 
       return {
         select: () => ({
@@ -405,7 +407,7 @@ export function createMockServerClient() {
       }
       return { data: { session: null }, error: null };
     },
-    exchangeCodeForSession: async (code: string) => {
+    exchangeCodeForSession: async (_code: string) => {
       try {
         cookieStore.set("mock_logged_in", "true", { path: "/" });
         const defaultProfile = {
@@ -414,10 +416,11 @@ export function createMockServerClient() {
           avatar_url: mockUser.raw_user_meta_data.avatar_url,
           timezone: "America/Los_Angeles",
           google_refresh_token: "mock_google_refresh_token_123",
-          calendar_sync_enabled: true
+          calendar_sync_enabled: true,
+          last_synced_at: null
         };
         cookieStore.set("mock_profile", JSON.stringify(defaultProfile), { path: "/" });
-      } catch (err) {}
+      } catch {}
 
       return {
         data: {
@@ -433,7 +436,7 @@ export function createMockServerClient() {
       try {
         cookieStore.set("mock_logged_in", "false", { path: "/", maxAge: -1 });
         cookieStore.set("mock_profile", "", { path: "/", maxAge: -1 });
-      } catch (err) {}
+      } catch {}
       return { error: null };
     }
   };
@@ -474,14 +477,14 @@ export function createClient() {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options });
-          } catch (error) {
+          } catch {
             // Can be ignored if handled by middleware session update
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: "", ...options });
-          } catch (error) {
+          } catch {
             // Can be ignored if handled by middleware session update
           }
         },

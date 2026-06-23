@@ -5,7 +5,8 @@ create table public.profiles (
   avatar_url text,
   timezone text default 'America/Los_Angeles',
   google_refresh_token text,
-  calendar_sync_enabled boolean default false
+  calendar_sync_enabled boolean default false,
+  last_synced_at timestamptz
 );
 
 -- Create recurring_availability table

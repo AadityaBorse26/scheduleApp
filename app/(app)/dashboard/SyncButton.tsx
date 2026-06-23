@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "@/components/Toast";
 
 interface SyncButtonProps {
   userId: string;
@@ -27,16 +28,20 @@ export default function SyncButton({ userId, isSyncActive }: SyncButtonProps) {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        const msg = data.message || "Calendar synchronized successfully!";
         setFeedback({
-          text: data.message || "Calendar synchronized successfully!",
+          text: msg,
           type: "success",
         });
+        toast(msg, "success");
         router.refresh();
       } else {
+        const err = data.error || "Failed to synchronize calendar events.";
         setFeedback({
-          text: data.error || "Failed to synchronize calendar events.",
+          text: err,
           type: "error",
         });
+        toast(err, "error");
         if (data.reconnectRequired) {
           // If token was revoked, reload page to update the dashboard's visual status
           router.refresh();
@@ -44,10 +49,12 @@ export default function SyncButton({ userId, isSyncActive }: SyncButtonProps) {
       }
     } catch (err) {
       console.error("Sync error:", err);
+      const connErr = "A connection error occurred. Please try again.";
       setFeedback({
-        text: "A connection error occurred. Please try again.",
+        text: connErr,
         type: "error",
       });
+      toast(connErr, "error");
     } finally {
       setIsSyncing(false);
     }

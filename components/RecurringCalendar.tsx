@@ -6,6 +6,8 @@ import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { supabase } from "@/lib/supabase/client";
+import { toast } from "@/components/Toast";
+import CalendarSkeleton from "@/components/CalendarSkeleton";
 
 // Fixed anchor week: June 14, 2026 (Sunday) to June 20, 2026 (Saturday)
 const BASE_SUNDAY = "2026-06-14";
@@ -26,6 +28,18 @@ export default function RecurringCalendar() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<any | null>(null);
   const calendarRef = useRef<any>(null);
+
+  // Responsiveness checks
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Helper: DB row to FullCalendar event format
   const dbRowToEvent = (row: RecurringAvailability) => {
@@ -66,6 +80,7 @@ export default function RecurringCalendar() {
           setEvents(data.map(dbRowToEvent));
         } else if (error) {
           console.error("Error fetching recurring pattern:", error);
+          toast("Error loading availability slots.", "error");
         }
       }
       setIsLoading(false);
@@ -98,13 +113,14 @@ export default function RecurringCalendar() {
 
     if (error) {
       console.error("Error creating availability:", error);
-      alert("Failed to save selection. Please try again.");
+      toast("Failed to save selection. Please try again.", "error");
       return;
     }
 
     if (data && data.length > 0) {
       const newEvent = dbRowToEvent(data[0]);
       setEvents((prev) => [...prev, newEvent]);
+      toast("Recurring available block created!", "success");
     }
   };
 
@@ -129,7 +145,7 @@ export default function RecurringCalendar() {
 
     if (error) {
       console.error("Error updating availability slot:", error);
-      alert("Failed to save changes. Reverting change.");
+      toast("Failed to update slot. Reverting changes.", "error");
       changeInfo.revert();
     } else {
       setEvents((prev) =>
@@ -139,6 +155,7 @@ export default function RecurringCalendar() {
             : evt
         )
       );
+      toast("Recurring slot updated successfully!", "success");
     }
   };
 
@@ -160,21 +177,17 @@ export default function RecurringCalendar() {
 
     if (error) {
       console.error("Error deleting slot:", error);
-      alert("Failed to delete slot. Please try again.");
+      toast("Failed to delete slot. Please try again.", "error");
     } else {
       eventToDelete.remove();
       setEvents((prev) => prev.filter((evt) => evt.id !== eventToDelete.id));
+      toast("Recurring slot deleted.", "success");
     }
     setEventToDelete(null);
   };
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[600px] border border-slate-900 rounded-2xl bg-slate-900/10 backdrop-blur-sm">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
-        <p className="text-sm text-slate-400">Loading availability calendar...</p>
-      </div>
-    );
+    return <CalendarSkeleton />;
   }
 
   return (
@@ -182,7 +195,7 @@ export default function RecurringCalendar() {
       {isSaving && (
         <div className="absolute top-4 right-4 flex items-center space-x-2 bg-slate-900/80 border border-indigo-500/20 text-indigo-400 text-xs px-3 py-1.5 rounded-full z-10 animate-pulse">
           <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-          <span>Auto-saving...</span>
+          <span>Saving...</span>
         </div>
       )}
 
@@ -218,12 +231,13 @@ export default function RecurringCalendar() {
       )}
 
       <FullCalendar
+        key={isMobile ? "mobile" : "desktop"}
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
         initialDate={BASE_SUNDAY}
         headerToolbar={false}
-        dayHeaderFormat={{ weekday: "long" }}
+        dayHeaderFormat={isMobile ? { weekday: "short" } : { weekday: "long" }}
         slotMinTime="06:00:00"
         slotMaxTime="24:00:00"
         allDaySlot={false}
@@ -241,4 +255,3 @@ export default function RecurringCalendar() {
     </div>
   );
 }
-

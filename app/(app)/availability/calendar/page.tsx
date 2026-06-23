@@ -2,10 +2,15 @@ import React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import CalendarSkeleton from "@/components/CalendarSkeleton";
+
 // Dynamic import to bypass FullCalendar SSR hydration issues
 const AvailabilityCalendar = dynamic(
   () => import("@/components/AvailabilityCalendar"),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <CalendarSkeleton />
+  }
 );
 
 export default function AvailabilityCalendarPage() {

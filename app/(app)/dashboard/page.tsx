@@ -18,11 +18,32 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
+  const { data: patterns } = await supabase
+    .from("recurring_availability")
+    .select("id")
+    .eq("user_id", user.id);
+
   const name = profile?.name || user.email?.split("@")[0] || "User";
   const isSyncActive = !!(profile?.calendar_sync_enabled && profile?.google_refresh_token);
+  const hasPatterns = !!(patterns && patterns.length > 0);
 
   return (
     <div className="flex flex-col space-y-10 animate-fade-in">
+      
+      {/* Global Warning callout if no recurring pattern configured */}
+      {!hasPatterns && (
+        <div className="p-5 rounded-3xl border border-amber-500/20 bg-amber-500/5 text-amber-300 text-xs leading-relaxed flex items-start space-x-3 shadow-lg">
+          <span className="text-base mt-0.5">⚠️</span>
+          <div>
+            <p className="font-bold">Weekly availability pattern not set up yet</p>
+            <p className="text-slate-400 mt-0.5">
+              You haven&apos;t added default available slots. Without a recurring pattern, you will be shown as unavailable by default in all group scheduling rooms.
+              Click <Link href="/availability/recurring" className="text-indigo-400 hover:text-indigo-350 font-semibold underline">Edit Weekly Pattern</Link> to configure your normal week.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -88,17 +109,25 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-bold text-slate-300">Weekly Schedule</span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                Setup Complete
-              </span>
+              {hasPatterns ? (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                  Setup Complete
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
+                  Setup Pending
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400 leading-relaxed mb-6">
-              Define your recurring available slots. Friends can select any open slot on your shared coordinator layout during these periods.
+              {hasPatterns
+                ? "Define your recurring available slots. Friends can select any open slot on your shared coordinator layout during these periods."
+                : "⚠️ No default recurring patterns set up yet! Please configure your weekly default availability so coordinates can search overlaps."}
             </p>
           </div>
           <Link
             href="/availability"
-            className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-slate-100 transition-colors"
+            className="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-855 border border-slate-800 text-slate-300 hover:text-slate-100 transition-colors"
           >
             View Weekly Grid
           </Link>

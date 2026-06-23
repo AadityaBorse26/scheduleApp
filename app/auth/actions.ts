@@ -71,3 +71,30 @@ export async function signOutUser() {
   revalidatePath("/", "layout");
   return { success: true };
 }
+
+/**
+ * Updates the profile fields (name and/or timezone) for the authenticated user.
+ */
+export async function updateProfile(values: { name?: string; timezone?: string }) {
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { success: false, error: "Unauthorized: No active user session." };
+  }
+
+  const { error: dbError } = await supabase
+    .from("profiles")
+    .update(values)
+    .eq("id", user.id);
+
+  if (dbError) {
+    console.error("Error updating profile:", dbError);
+    return { success: false, error: "Failed to update profile settings." };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/settings");
+  revalidatePath("/group");
+  return { success: true };
+}

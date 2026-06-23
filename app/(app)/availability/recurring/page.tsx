@@ -1,10 +1,15 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import CalendarSkeleton from "@/components/CalendarSkeleton";
+
 // Dynamic import of the calendar component to bypass SSR hydration warnings with FullCalendar
 const RecurringCalendar = dynamic(
   () => import("@/components/RecurringCalendar"),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <CalendarSkeleton />
+  }
 );
 
 export default function RecurringAvailabilityPage() {

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppHeaderClient from "./AppHeaderClient";
+import ToastContainer from "@/components/Toast";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -42,6 +43,9 @@ export default async function AppLayout({ children }: AppLayoutProps) {
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-10 relative z-10">
         {children}
       </main>
+
+      {/* Global Toast Notification stack */}
+      <ToastContainer />
     </div>
   );
 }
