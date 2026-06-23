@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, prefer-const, @next/next/no-img-element */
 import { createBrowserClient } from '@supabase/ssr';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -113,6 +114,33 @@ class MockQueryBuilder {
 
   then(resolve: any) {
     try {
+      if (this.tableName === 'profiles') {
+        const getCookie = (name: string) => {
+          if (typeof window === 'undefined') return undefined;
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return undefined;
+        };
+        const profileStr = getCookie('mock_profile');
+        let profile = profileStr ? JSON.parse(decodeURIComponent(profileStr)) : {
+          id: mockUser.id,
+          name: mockUser.raw_user_meta_data.full_name,
+          avatar_url: mockUser.raw_user_meta_data.avatar_url,
+          timezone: 'America/Los_Angeles',
+          google_refresh_token: null,
+          calendar_sync_enabled: false
+        };
+        let matches = true;
+        for (const filter of this.filters) {
+          if (profile[filter.field] !== filter.value) {
+            matches = false;
+            break;
+          }
+        }
+        resolve({ data: matches ? [profile] : [], error: null });
+        return;
+      }
       const data = this.executeSelect();
       resolve({ data, error: null });
     } catch (err: any) {
@@ -141,6 +169,29 @@ class MockQueryBuilder {
   }
 
   update(values: any) {
+    if (this.tableName === 'profiles') {
+      const getCookie = (name: string) => {
+        if (typeof window === 'undefined') return undefined;
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return undefined;
+      };
+      const profileStr = getCookie('mock_profile');
+      let profile = profileStr ? JSON.parse(decodeURIComponent(profileStr)) : {
+        id: mockUser.id,
+        name: mockUser.raw_user_meta_data.full_name,
+        avatar_url: mockUser.raw_user_meta_data.avatar_url,
+        timezone: 'America/Los_Angeles',
+        google_refresh_token: null,
+        calendar_sync_enabled: false
+      };
+      const updated = { ...profile, ...values };
+      if (typeof window !== 'undefined') {
+        document.cookie = `mock_profile=${encodeURIComponent(JSON.stringify(updated))}; path=/;`;
+      }
+      return new MockUpdateBuilder([updated]);
+    }
     const data = this.getData();
     const updatedRows: any[] = [];
     const modifiedData = data.map(row => {
@@ -172,19 +223,51 @@ class MockQueryBuilder {
   }
 }
 
+const getCookie = (name: string) => {
+  if (typeof window === 'undefined') return undefined;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return undefined;
+};
+
 const mockAuth = {
   getUser: async () => {
-    return { data: { user: mockUser }, error: null };
+    const isLoggedIn = getCookie('mock_logged_in') === 'true';
+    if (isLoggedIn) {
+      return { data: { user: mockUser }, error: null };
+    }
+    return { data: { user: null }, error: { message: 'Not logged in' } };
   },
   getSession: async () => {
-    return { data: { session: { user: mockUser } }, error: null };
+    const isLoggedIn = getCookie('mock_logged_in') === 'true';
+    if (isLoggedIn) {
+      const profileStr = getCookie('mock_profile');
+      const profile = profileStr ? JSON.parse(decodeURIComponent(profileStr)) : null;
+      return { 
+        data: { 
+          session: { 
+            user: mockUser, 
+            provider_refresh_token: profile?.google_refresh_token || 'mock_google_refresh_token_123' 
+          } 
+        }, 
+        error: null 
+      };
+    }
+    return { data: { session: null }, error: null };
   },
   signInWithOAuth: async (options: any) => {
     console.log('Mock OAuth login initialized:', options);
-    return { data: { provider: 'google', url: '/dashboard' }, error: null };
+    const redirectTo = options?.options?.redirectTo || '/dashboard';
+    const callbackUrl = `/auth/callback?code=mock_code&next=${encodeURIComponent(redirectTo)}`;
+    return { data: { provider: 'google', url: callbackUrl }, error: null };
   },
   signOut: async () => {
     console.log('Mock signed out');
+    if (typeof window !== 'undefined') {
+      document.cookie = "mock_logged_in=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie = "mock_profile=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    }
     return { error: null };
   }
 };
@@ -199,3 +282,4 @@ const mockSupabase = {
 export const supabase = isConfigured
   ? createBrowserClient(supabaseUrl, supabaseAnonKey)
   : (mockSupabase as any);
+
