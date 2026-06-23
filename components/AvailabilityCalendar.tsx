@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -490,8 +490,8 @@ export default function AvailabilityCalendar() {
             center: "title",
             right: "dayGridMonth,timeGridWeek,timeGridDay",
           }}
-          slotMinTime="06:00:00"
-          slotMaxTime="24:00:00"
+          slotMinTime="08:00:00"
+          slotMaxTime="23:00:00"
           allDaySlot={false}
           editable={true}
           selectable={true}

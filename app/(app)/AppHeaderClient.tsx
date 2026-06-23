@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOutUser } from "@/app/auth/actions";
@@ -23,7 +23,7 @@ export default function AppHeaderClient({ user }: AppHeaderClientProps) {
     { name: "Dashboard", href: "/dashboard", icon: "📊" },
     { name: "Availability", href: "/availability", icon: "🗓️" },
     { name: "Group Space", href: "/group", icon: "👥" },
-    { name: "Settings", href: "/settings", icon: "⚙️" },
+    { name: "Settings & Help", href: "/settings", icon: "⚙️" },
   ];
 
   const handleSignOut = async () => {

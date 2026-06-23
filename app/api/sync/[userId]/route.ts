@@ -4,9 +4,9 @@ import { syncGoogleCalendar } from "@/lib/google/sync";
 
 export async function POST(
   _request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
-  const targetUserId = params.userId;
+  const { userId: targetUserId } = await params;
   const supabase = createClient();
 
   // Verify the user is authenticated

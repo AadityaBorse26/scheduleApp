@@ -107,8 +107,8 @@ export class MockServerQueryBuilder {
     return this;
   }
 
-  then(resolve: any) {
-    const cookieStore = cookies();
+  async then(resolve: any) {
+    const cookieStore = await cookies();
     
     if (this.tableName === "profiles") {
       const profileStr = cookieStore.get("mock_profile")?.value;
@@ -207,190 +207,269 @@ export class MockServerQueryBuilder {
   }
 
   update(values: any) {
-    const cookieStore = cookies();
-    if (this.tableName === "profiles") {
-      const profileStr = cookieStore.get("mock_profile")?.value;
-      const profile = profileStr ? JSON.parse(profileStr) : {
-        id: mockUser.id,
-        name: mockUser.raw_user_meta_data.full_name,
-        avatar_url: mockUser.raw_user_meta_data.avatar_url,
-        timezone: "America/Los_Angeles",
-        google_refresh_token: null,
-        calendar_sync_enabled: false,
-        last_synced_at: null
-      };
-
-      const updated = { ...profile, ...values };
-      try {
-        cookieStore.set("mock_profile", JSON.stringify(updated), { path: "/" });
-      } catch {
-        // Cookies cannot always be set during server component rendering
-      }
-      
-      return {
-        then: (resolve: any) => resolve({ data: [updated], error: null })
-      };
-    }
-
-    if (this.tableName === "date_overrides") {
-      const overridesStr = cookieStore.get("mock_overrides")?.value;
-      const overrides = overridesStr ? JSON.parse(overridesStr) : [];
-      const updatedRows: any[] = [];
-
-      const modified = overrides.map((row: any) => {
-        const matches = this.filters.every(filter => row[filter.field] === filter.value);
-        if (matches) {
-          const updated = { ...row, ...values };
-          updatedRows.push(updated);
-          return updated;
-        }
-        return row;
-      });
-
-      try {
-        cookieStore.set("mock_overrides", JSON.stringify(modified), { path: "/" });
-      } catch {}
-
-      return {
-        then: (resolve: any) => resolve({ data: updatedRows, error: null })
-      };
-    }
-
     return {
-      then: (resolve: any) => resolve({ data: [], error: null })
+      then: async (resolve: any) => {
+        const cookieStore = await cookies();
+        if (this.tableName === "profiles") {
+          const profileStr = cookieStore.get("mock_profile")?.value;
+          const profile = profileStr ? JSON.parse(profileStr) : {
+            id: mockUser.id,
+            name: mockUser.raw_user_meta_data.full_name,
+            avatar_url: mockUser.raw_user_meta_data.avatar_url,
+            timezone: "America/Los_Angeles",
+            google_refresh_token: null,
+            calendar_sync_enabled: false,
+            last_synced_at: null
+          };
+
+          const updated = { ...profile, ...values };
+          try {
+            cookieStore.set("mock_profile", JSON.stringify(updated), { path: "/" });
+          } catch {
+            // Cookies cannot always be set during server component rendering
+          }
+          
+          resolve({ data: [updated], error: null });
+          return;
+        }
+
+        if (this.tableName === "date_overrides") {
+          const overridesStr = cookieStore.get("mock_overrides")?.value;
+          const overrides = overridesStr ? JSON.parse(overridesStr) : [];
+          const updatedRows: any[] = [];
+
+          const modified = overrides.map((row: any) => {
+            const matches = this.filters.every(filter => row[filter.field] === filter.value);
+            if (matches) {
+              const updated = { ...row, ...values };
+              updatedRows.push(updated);
+              return updated;
+            }
+            return row;
+          });
+
+          try {
+            cookieStore.set("mock_overrides", JSON.stringify(modified), { path: "/" });
+          } catch {}
+
+          resolve({ data: updatedRows, error: null });
+          return;
+        }
+
+        resolve({ data: [], error: null });
+      }
     };
   }
 
   delete() {
-    const cookieStore = cookies();
-    if (this.tableName === "synced_busy_blocks") {
-      const busyStr = cookieStore.get("mock_busy_blocks")?.value;
-      const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
-
-      const remaining = busyBlocks.filter((row: any) => {
-        const matches = this.filters.every(filter => {
-          if (filter.operator === "gte") {
-            return new Date(row[filter.field]) >= new Date(filter.value);
-          }
-          if (filter.operator === "lte") {
-            return new Date(row[filter.field]) <= new Date(filter.value);
-          }
-          return row[filter.field] === filter.value;
-        });
-        return !matches;
-      });
-
-      try {
-        cookieStore.set("mock_busy_blocks", JSON.stringify(remaining), { path: "/" });
-      } catch {}
-
-      return {
-        then: (resolve: any) => resolve({ data: remaining, error: null })
-      };
-    }
-
-    if (this.tableName === "date_overrides") {
-      const overridesStr = cookieStore.get("mock_overrides")?.value;
-      const overrides = overridesStr ? JSON.parse(overridesStr) : [];
-
-      const remaining = overrides.filter((row: any) => {
-        const matches = this.filters.every(filter => row[filter.field] === filter.value);
-        return !matches;
-      });
-
-      const deleted = overrides.filter((row: any) => {
-        return this.filters.every(filter => row[filter.field] === filter.value);
-      });
-
-      try {
-        cookieStore.set("mock_overrides", JSON.stringify(remaining), { path: "/" });
-      } catch {}
-
-      return {
-        then: (resolve: any) => resolve({ data: deleted, error: null })
-      };
-    }
-
     return {
-      then: (resolve: any) => resolve({ data: [], error: null })
+      then: async (resolve: any) => {
+        const cookieStore = await cookies();
+        if (this.tableName === "synced_busy_blocks") {
+          const busyStr = cookieStore.get("mock_busy_blocks")?.value;
+          const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+
+          const remaining = busyBlocks.filter((row: any) => {
+            const matches = this.filters.every(filter => {
+              if (filter.operator === "gte") {
+                return new Date(row[filter.field]) >= new Date(filter.value);
+              }
+              if (filter.operator === "lte") {
+                return new Date(row[filter.field]) <= new Date(filter.value);
+              }
+              return row[filter.field] === filter.value;
+            });
+            return !matches;
+          });
+
+          try {
+            cookieStore.set("mock_busy_blocks", JSON.stringify(remaining), { path: "/" });
+          } catch {}
+
+          resolve({ data: remaining, error: null });
+          return;
+        }
+
+        if (this.tableName === "date_overrides") {
+          const overridesStr = cookieStore.get("mock_overrides")?.value;
+          const overrides = overridesStr ? JSON.parse(overridesStr) : [];
+
+          const remaining = overrides.filter((row: any) => {
+            const matches = this.filters.every(filter => row[filter.field] === filter.value);
+            return !matches;
+          });
+
+          const deleted = overrides.filter((row: any) => {
+            return this.filters.every(filter => row[filter.field] === filter.value);
+          });
+
+          try {
+            cookieStore.set("mock_overrides", JSON.stringify(remaining), { path: "/" });
+          } catch {}
+
+          resolve({ data: deleted, error: null });
+          return;
+        }
+
+        resolve({ data: [], error: null });
+      }
     };
   }
 
   insert(values: any | any[]) {
-    const cookieStore = cookies();
     if (this.tableName === "synced_busy_blocks") {
-      const busyStr = cookieStore.get("mock_busy_blocks")?.value;
-      const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
-
-      const rowsToInsert = Array.isArray(values) ? values : [values];
-      const inserted = rowsToInsert.map(row => ({
-        id: Math.random().toString(36).substring(2),
-        last_synced_at: new Date().toISOString(),
-        ...row
-      }));
-
-      busyBlocks.push(...inserted);
-
-      try {
-        cookieStore.set("mock_busy_blocks", JSON.stringify(busyBlocks), { path: "/" });
-      } catch {}
-
       return {
         select: () => ({
-          then: (resolve: any) => resolve({ data: inserted, error: null })
+          then: async (resolve: any) => {
+            const cookieStore = await cookies();
+            const busyStr = cookieStore.get("mock_busy_blocks")?.value;
+            const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+
+            const rowsToInsert = Array.isArray(values) ? values : [values];
+            const inserted = rowsToInsert.map(row => ({
+              id: Math.random().toString(36).substring(2),
+              last_synced_at: new Date().toISOString(),
+              ...row
+            }));
+
+            busyBlocks.push(...inserted);
+
+            try {
+              cookieStore.set("mock_busy_blocks", JSON.stringify(busyBlocks), { path: "/" });
+            } catch {}
+
+            resolve({ data: inserted, error: null });
+          }
         }),
-        then: (resolve: any) => resolve({ data: inserted, error: null })
+        then: async (resolve: any) => {
+          const cookieStore = await cookies();
+          const busyStr = cookieStore.get("mock_busy_blocks")?.value;
+          const busyBlocks = busyStr ? JSON.parse(busyStr) : [];
+
+          const rowsToInsert = Array.isArray(values) ? values : [values];
+          const inserted = rowsToInsert.map(row => ({
+            id: Math.random().toString(36).substring(2),
+            last_synced_at: new Date().toISOString(),
+            ...row
+          }));
+
+          busyBlocks.push(...inserted);
+
+          try {
+            cookieStore.set("mock_busy_blocks", JSON.stringify(busyBlocks), { path: "/" });
+          } catch {}
+
+          resolve({ data: inserted, error: null });
+        }
       };
     }
 
     if (this.tableName === "date_overrides") {
-      const overridesStr = cookieStore.get("mock_overrides")?.value;
-      const overrides = overridesStr ? JSON.parse(overridesStr) : [];
-
-      const rowsToInsert = Array.isArray(values) ? values : [values];
-      const inserted = rowsToInsert.map(row => ({
-        id: Math.random().toString(36).substring(2),
-        ...row
-      }));
-
-      overrides.push(...inserted);
-
-      try {
-        cookieStore.set("mock_overrides", JSON.stringify(overrides), { path: "/" });
-      } catch {}
-
       return {
         select: () => ({
           single: () => ({
-            then: (resolve: any) => resolve({ data: inserted[0], error: null })
+            then: async (resolve: any) => {
+              const cookieStore = await cookies();
+              const overridesStr = cookieStore.get("mock_overrides")?.value;
+              const overrides = overridesStr ? JSON.parse(overridesStr) : [];
+
+              const rowsToInsert = Array.isArray(values) ? values : [values];
+              const inserted = rowsToInsert.map(row => ({
+                id: Math.random().toString(36).substring(2),
+                ...row
+              }));
+
+              overrides.push(...inserted);
+
+              try {
+                cookieStore.set("mock_overrides", JSON.stringify(overrides), { path: "/" });
+              } catch {}
+
+              resolve({ data: inserted[0], error: null });
+            }
           }),
-          then: (resolve: any) => resolve({ data: inserted, error: null })
+          then: async (resolve: any) => {
+            const cookieStore = await cookies();
+            const overridesStr = cookieStore.get("mock_overrides")?.value;
+            const overrides = overridesStr ? JSON.parse(overridesStr) : [];
+
+            const rowsToInsert = Array.isArray(values) ? values : [values];
+            const inserted = rowsToInsert.map(row => ({
+              id: Math.random().toString(36).substring(2),
+              ...row
+            }));
+
+            overrides.push(...inserted);
+
+            try {
+              cookieStore.set("mock_overrides", JSON.stringify(overrides), { path: "/" });
+            } catch {}
+
+            resolve({ data: inserted, error: null });
+          }
         }),
         single: () => ({
-          then: (resolve: any) => resolve({ data: inserted[0], error: null })
+          then: async (resolve: any) => {
+            const cookieStore = await cookies();
+            const overridesStr = cookieStore.get("mock_overrides")?.value;
+            const overrides = overridesStr ? JSON.parse(overridesStr) : [];
+
+            const rowsToInsert = Array.isArray(values) ? values : [values];
+            const inserted = rowsToInsert.map(row => ({
+              id: Math.random().toString(36).substring(2),
+              ...row
+            }));
+
+            overrides.push(...inserted);
+
+            try {
+              cookieStore.set("mock_overrides", JSON.stringify(overrides), { path: "/" });
+            } catch {}
+
+            resolve({ data: inserted[0], error: null });
+          }
         }),
-        then: (resolve: any) => resolve({ data: inserted, error: null })
+        then: async (resolve: any) => {
+          const cookieStore = await cookies();
+          const overridesStr = cookieStore.get("mock_overrides")?.value;
+          const overrides = overridesStr ? JSON.parse(overridesStr) : [];
+
+          const rowsToInsert = Array.isArray(values) ? values : [values];
+          const inserted = rowsToInsert.map(row => ({
+            id: Math.random().toString(36).substring(2),
+            ...row
+          }));
+
+          overrides.push(...inserted);
+
+          try {
+            cookieStore.set("mock_overrides", JSON.stringify(overrides), { path: "/" });
+          } catch {}
+
+          resolve({ data: inserted, error: null });
+        }
       };
     }
 
     return {
-      then: (resolve: any) => resolve({ data: [], error: null })
+      then: async (resolve: any) => resolve({ data: [], error: null })
     };
   }
 }
 
 export function createMockServerClient() {
-  const cookieStore = cookies();
-  const isLoggedIn = cookieStore.get("mock_logged_in")?.value === "true";
-
   const mockAuth = {
     getUser: async () => {
+      const cookieStore = await cookies();
+      const isLoggedIn = cookieStore.get("mock_logged_in")?.value === "true";
       if (isLoggedIn) {
         return { data: { user: mockUser }, error: null };
       }
       return { data: { user: null }, error: { message: "Not logged in" } };
     },
     getSession: async () => {
+      const cookieStore = await cookies();
+      const isLoggedIn = cookieStore.get("mock_logged_in")?.value === "true";
       if (isLoggedIn) {
         const profileStr = cookieStore.get("mock_profile")?.value;
         const profile = profileStr ? JSON.parse(profileStr) : null;
@@ -408,6 +487,7 @@ export function createMockServerClient() {
       return { data: { session: null }, error: null };
     },
     exchangeCodeForSession: async (_code: string) => {
+      const cookieStore = await cookies();
       try {
         cookieStore.set("mock_logged_in", "true", { path: "/" });
         const defaultProfile = {
@@ -433,6 +513,7 @@ export function createMockServerClient() {
       };
     },
     signOut: async () => {
+      const cookieStore = await cookies();
       try {
         cookieStore.set("mock_logged_in", "false", { path: "/", maxAge: -1 });
         cookieStore.set("mock_profile", "", { path: "/", maxAge: -1 });
@@ -464,25 +545,26 @@ export function createClient() {
     return createMockServerClient() as any;
   }
 
-  const cookieStore = cookies();
-
   return createServerClient(
     supabaseUrl!,
     supabaseAnonKey!,
     {
       cookies: {
-        get(name: string) {
+        async get(name: string) {
+          const cookieStore = await cookies();
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
+        async set(name: string, value: string, options: CookieOptions) {
           try {
+            const cookieStore = await cookies();
             cookieStore.set({ name, value, ...options });
           } catch {
             // Can be ignored if handled by middleware session update
           }
         },
-        remove(name: string, options: CookieOptions) {
+        async remove(name: string, options: CookieOptions) {
           try {
+            const cookieStore = await cookies();
             cookieStore.set({ name, value: "", ...options });
           } catch {
             // Can be ignored if handled by middleware session update

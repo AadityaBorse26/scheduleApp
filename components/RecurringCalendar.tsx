@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -238,8 +238,8 @@ export default function RecurringCalendar() {
         initialDate={BASE_SUNDAY}
         headerToolbar={false}
         dayHeaderFormat={isMobile ? { weekday: "short" } : { weekday: "long" }}
-        slotMinTime="06:00:00"
-        slotMaxTime="24:00:00"
+        slotMinTime="08:00:00"
+        slotMaxTime="23:00:00"
         allDaySlot={false}
         editable={true}
         selectable={true}

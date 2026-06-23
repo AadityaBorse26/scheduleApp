@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function CalendarSkeleton() {
   return (
     <div className="w-full border border-slate-900 rounded-3xl p-6 bg-slate-900/10 backdrop-blur-sm shadow-2xl space-y-6 animate-pulse">
