@@ -15,7 +15,29 @@ FriendScheduler is a modern, premium Next.js scheduling application that makes f
 
 ---
 
-## Architecture: Dual Mode execution
+## Repository Structure
+
+All application code is located inside the `src/` directory to keep the root directory clean, structured, and modular:
+
+- **`src/app/`**: Next.js App Router folders grouped logically:
+  - `(marketing)`: Public portal / landing page.
+  - `(auth)`: Login and session routes.
+  - `(dashboard)`: Authenticated dashboard, user settings, availability views, and group coordinate rooms.
+  - `api/`: API routes for calendar sync and overlap computations.
+  - `auth/`: Authentication callback route handler.
+- **`src/components/`**: Shared global/UI components:
+  - `ui/`: Core styling blocks (e.g., [Toast.tsx](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/components/ui/Toast.tsx)).
+- **`src/features/`**: Feature-scoped modules. The calendar feature is self-contained under `src/features/calendar/`:
+  - `components/`: [AvailabilityCalendar.tsx](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/features/calendar/components/AvailabilityCalendar.tsx), [GroupCalendar.tsx](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/features/calendar/components/GroupCalendar.tsx), [RecurringCalendar.tsx](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/features/calendar/components/RecurringCalendar.tsx), and [CalendarSkeleton.tsx](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/features/calendar/components/CalendarSkeleton.tsx).
+  - `utils/`: Overlap calculation algorithm and its precedence tests.
+  - `types.ts`: Scheduling data contracts.
+- **`src/lib/`**: Integration adapters and dynamic service layers:
+  - `supabase/`: Database clients, dynamic local/cloud proxy endpoints, auth routines, and queries.
+  - `google/`: Google Calendar synchronization logic.
+
+---
+
+## Architecture: Dual Mode Execution
 
 To streamline local development, prototyping, and user evaluation, FriendScheduler features a **Dual Mode execution** architecture:
 
@@ -28,9 +50,9 @@ To streamline local development, prototyping, and user evaluation, FriendSchedul
    - Mock users (Alice, Bob, Charlie, etc.) are seeded automatically to showcase calendar overlay features immediately.
 
 This behavior is driven by **Dynamic Client Proxies** defined in:
-- Client-side: [lib/supabase/client.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/lib/supabase/client.ts)
-- Server-side: [lib/supabase/server.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/lib/supabase/server.ts)
-- Middleware routing: [middleware.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/middleware.ts)
+- Client-side: [src/lib/supabase/client.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/lib/supabase/client.ts)
+- Server-side: [src/lib/supabase/server.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/lib/supabase/server.ts)
+- Middleware routing: [src/middleware.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/middleware.ts)
 
 ---
 
@@ -111,14 +133,14 @@ If setting up the database manually, ensure the following tables are created:
 - **Availability (`/availability`)**: Manage weekly routines and single-day custom overrides:
   - Drag and draw recurring slots using the interactive grid.
   - Set custom overrides (e.g., mark a normally free Wednesday as fully "Busy" or set specific custom times).
-- **Group Space (`/group`)**: Create coordinate rooms where you select members to overlay schedules. An intersection engine runs to overlay availability patterns, subtracting busy events, showing exactly when everyone is free to meet.
+- **Group Space (`/group`)**: Coordinate rooms where you select members to overlay schedules. An intersection engine runs to overlay availability patterns, subtracting busy events, showing exactly when everyone is free to meet.
 
 ---
 
 ## Developer Guide: How to Extend
 
 ### Extending the Overlap Algorithm
-The overlap and free-time search calculations are handled inside [app/api/overlap/route.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/app/api/overlap/route.ts). If you want to customize search limits, minimum meeting duration constraints, or introduce timezone conversions, this route is the entry point.
+The overlap and free-time search calculations are handled inside [src/features/calendar/utils/overlap.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/features/calendar/utils/overlap.ts). If you want to customize search limits, minimum meeting duration constraints, or introduce timezone conversions, this helper file is the entry point.
 
 ### Customizing Mock Data
-If working in mock/offline mode, you can customize the mock users, profile details, and recurring calendars by modifying [lib/supabase/client.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/lib/supabase/client.ts) (for frontend mock) and [lib/supabase/server.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/lib/supabase/server.ts) (for backend rendering).
+If working in mock/offline mode, you can customize the mock users, profile details, and recurring calendars by modifying [src/lib/supabase/client.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/lib/supabase/client.ts) (for frontend mock) and [src/lib/supabase/server.ts](file:///c:/Users/borse/OneDrive/Documents/scheduleApp/src/lib/supabase/server.ts) (for backend rendering).
