@@ -15,7 +15,11 @@ export async function middleware(request: NextRequest) {
   let user = null;
   let response = NextResponse.next({ request });
 
-  if (isConfigured) {
+  const isMockLoggedIn = request.cookies.get("mock_logged_in")?.value === "true";
+
+  if (isMockLoggedIn) {
+    user = { id: "mock-user-1111-2222-3333-444444444444" };
+  } else if (isConfigured) {
     const supabase = createServerClient(
       supabaseUrl!,
       supabaseAnonKey!,
@@ -40,12 +44,6 @@ export async function middleware(request: NextRequest) {
 
     const { data: { user: supabaseUser } } = await supabase.auth.getUser();
     user = supabaseUser;
-  } else {
-    // Check mock cookie status in development
-    const isLoggedIn = request.cookies.get("mock_logged_in")?.value === "true";
-    if (isLoggedIn) {
-      user = { id: "mock-user-1111-2222-3333-444444444444" };
-    }
   }
 
   const url = new URL(request.url);

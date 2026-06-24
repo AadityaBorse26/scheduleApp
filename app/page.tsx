@@ -1,121 +1,192 @@
-import Link from "next/link";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 export default function Home() {
+  const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(true);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          router.push("/dashboard");
+        } else {
+          setIsRedirecting(false);
+        }
+      } catch (err) {
+        console.error("Auth check error:", err);
+        setIsRedirecting(false);
+      }
+    }
+    checkAuth();
+  }, [router]);
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const redirectUrl = `${window.location.origin}/auth/callback?next=/dashboard`;
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          scopes: "https://www.googleapis.com/auth/calendar.readonly",
+          queryParams: {
+            access_type: "offline",
+            prompt: "consent",
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("Auth error:", err);
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleDemoLogin = () => {
+    setIsDemoLoading(true);
+    
+    // Set cookies to activate mock mode client & server side
+    document.cookie = "mock_logged_in=true; path=/; max-age=86400";
+    
+    const defaultProfile = {
+      id: "mock-user-1111-2222-3333-444444444444",
+      name: "Demo User",
+      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&h=256&q=80",
+      timezone: "America/Los_Angeles",
+      google_refresh_token: "mock_google_refresh_token_123",
+      calendar_sync_enabled: true,
+      last_synced_at: null
+    };
+    document.cookie = `mock_profile=${encodeURIComponent(JSON.stringify(defaultProfile))}; path=/; max-age=86400`;
+    
+    // Smooth transition
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 400);
+  };
+
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center font-sans relative overflow-hidden">
+        {/* Background blobs */}
+        <div className="absolute top-[20%] left-[20%] w-[350px] h-[350px] rounded-full bg-indigo-900/10 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] rounded-full bg-purple-900/10 blur-[100px] pointer-events-none" />
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400 text-sm font-medium tracking-wide">Loading FriendScheduler...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-hidden">
-      {/* Decorative background gradients */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/20 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-900/20 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Dynamic Background Gradients */}
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-900/15 blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-violet-900/15 blur-[130px] pointer-events-none" />
 
-      {/* Navigation Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md border-b border-slate-900 bg-slate-950/70">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center font-bold text-white text-lg shadow-lg shadow-indigo-500/20">
-              F
-            </div>
-            <span className="font-semibold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-300">
-              FriendScheduler
-            </span>
-          </div>
-
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link href="/dashboard" className="text-slate-400 hover:text-slate-200 transition-colors">
-              Dashboard
-            </Link>
-            <Link href="/availability" className="text-slate-400 hover:text-slate-200 transition-colors">
-              Availability
-            </Link>
-            <Link href="/group" className="text-slate-400 hover:text-slate-200 transition-colors">
-              Group
-            </Link>
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-full text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 active:scale-95"
-            >
-              Sign In
-            </Link>
-          </nav>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-6 py-20 flex flex-col items-center justify-center text-center relative z-10">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/5 text-xs text-indigo-400 mb-6 animate-pulse">
-          <span>✨</span>
-          <span>Next.js 14 + Tailwind CSS + Supabase Stack</span>
+      {/* Main Glassmorphic Portal Card */}
+      <div className="w-full max-w-md p-8 rounded-3xl border border-slate-900 bg-slate-950/65 backdrop-blur-xl shadow-2xl shadow-indigo-950/10 flex flex-col items-center text-center relative z-10">
+        
+        {/* Glowing Logo Emblem */}
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center font-bold text-white text-3xl shadow-xl shadow-indigo-500/25 mb-6 transition-all hover:scale-105 hover:rotate-3 duration-300">
+          F
         </div>
 
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-8 max-w-4xl leading-tight">
-          Find the perfect time to meet,{" "}
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400">
-            stress-free.
-          </span>
+        {/* Application Name */}
+        <h1 className="text-3xl font-extrabold tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-r from-slate-100 via-slate-200 to-slate-400">
+          FriendScheduler
         </h1>
 
-        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mb-12 leading-relaxed">
-          FriendScheduler combines your availability, syncs with Google Calendar, and allows you to find common free time slots with your friends in seconds.
+        {/* App Subtitle */}
+        <p className="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-6">
+          🗓️ Schedule Coordination Portal
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-24">
-          <Link
-            href="/login"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl text-sm font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/20 transition-all hover:-translate-y-0.5 active:scale-95 text-center"
+        {/* Short details */}
+        <p className="text-sm text-slate-400 mb-8 leading-relaxed max-w-xs">
+          Coordinate schedules, overlay calendars, and discover common free slots with your friends in seconds.
+        </p>
+
+        {/* Action Panel */}
+        <div className="w-full space-y-4">
+          {/* Sign In with Google */}
+          <button
+            onClick={handleGoogleLogin}
+            disabled={isGoogleLoading || isDemoLoading}
+            className="w-full py-3.5 px-5 rounded-xl text-sm font-semibold flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-100 hover:bg-slate-850 hover:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-200 group shadow-md"
           >
-            Get Started Free
-          </Link>
-          <Link
-            href="/dashboard"
-            className="w-full sm:w-auto px-8 py-4 rounded-xl text-sm font-semibold bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-slate-100 transition-all hover:-translate-y-0.5 active:scale-95 text-center"
+            {isGoogleLoading ? (
+              <div className="flex items-center space-x-2">
+                <span className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></span>
+                <span>Connecting to Google...</span>
+              </div>
+            ) : (
+              <>
+                <svg className="w-5 h-5 mr-3 group-hover:scale-105 transition-transform" viewBox="0 0 24 24">
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.85 2.99c.98-2.92 3.7-5.51 6.76-5.51z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M23.49 12.27c0-.81-.07-1.59-.2-2.36H12v4.51h6.43c-.28 1.44-1.1 2.66-2.33 3.49v2.9h3.76c2.2-2.02 3.63-5.01 3.63-8.54z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.24 14.81c-.25-.76-.39-1.57-.39-2.41s.14-1.65.39-2.41L1.39 7.01C.5 8.81 0 10.84 0 13c0 2.16.5 4.19 1.39 5.99l3.85-3.18z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c3.24 0 5.97-1.08 7.96-2.91l-3.76-2.9c-1.1.74-2.5 1.18-4.2 1.18-3.06 0-5.78-2.59-6.76-5.51l-3.85 2.99C3.37 20.33 7.35 23 12 23z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </>
+            )}
+          </button>
+
+          {/* Try Demo Mode */}
+          <button
+            onClick={handleDemoLogin}
+            disabled={isGoogleLoading || isDemoLoading}
+            className="w-full py-3.5 px-5 rounded-xl text-sm font-semibold flex items-center justify-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-200"
           >
-            View Demo Dashboard
-          </Link>
+            {isDemoLoading ? (
+              <div className="flex items-center space-x-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Setting up Demo...</span>
+              </div>
+            ) : (
+              <span>Explore Demo Dashboard</span>
+            )}
+          </button>
         </div>
 
-        {/* Feature Grid */}
-        <section className="grid md:grid-cols-3 gap-8 w-full max-w-5xl text-left">
-          <div className="p-6 rounded-2xl border border-slate-900 bg-slate-900/30 backdrop-blur-sm hover:border-slate-800 hover:bg-slate-900/50 transition-all duration-300 group">
-            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition-transform">
-              🗓️
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-slate-200">Interactive Calendar</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              Powered by FullCalendar for a smooth, interactive schedule editing experience. Drag, drop, and configure slots with ease.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl border border-slate-900 bg-slate-900/30 backdrop-blur-sm hover:border-slate-800 hover:bg-slate-900/50 transition-all duration-300 group">
-            <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 mb-6 group-hover:scale-110 transition-transform">
-              🔗
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-slate-200">Google Calendar Sync</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              Real-time Google OAuth synchronization checks your busy slots automatically, protecting you from scheduling conflicts.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl border border-slate-900 bg-slate-900/30 backdrop-blur-sm hover:border-slate-800 hover:bg-slate-900/50 transition-all duration-300 group">
-            <div className="w-12 h-12 rounded-xl bg-fuchsia-500/10 flex items-center justify-center text-fuchsia-400 mb-6 group-hover:scale-110 transition-transform">
-              👥
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-slate-200">Group Availability</h3>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              Invite friends to a group space, overlay calendars, and instantly see overlapping free slots without sharing private event details.
-            </p>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-900 mt-20 bg-slate-950/50 py-10 text-center text-sm text-slate-500 relative z-10">
-        <p className="mb-2">© {new Date().getFullYear()} FriendScheduler. Built with Next.js 14 and Supabase.</p>
-        <div className="flex gap-4 justify-center">
-          <Link href="/availability" className="hover:text-slate-350 transition-colors">Availability</Link>
-          <Link href="/group" className="hover:text-slate-350 transition-colors">Group</Link>
-          <Link href="/login" className="hover:text-slate-350 transition-colors">Login</Link>
+        {/* Footer info */}
+        <div className="mt-8 text-center border-t border-slate-900/60 pt-5 w-full">
+          <p className="text-[10px] text-slate-500 leading-relaxed max-w-[280px] mx-auto">
+            Authorized sign in syncs Google Calendar (read-only) for scheduling conflicts. Try Demo Mode to explore with sample data.
+          </p>
         </div>
-      </footer>
+
+      </div>
     </div>
   );
 }
-

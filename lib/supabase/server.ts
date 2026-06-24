@@ -545,7 +545,7 @@ export function createClient() {
     return createMockServerClient() as any;
   }
 
-  return createServerClient(
+  const realClient = createServerClient(
     supabaseUrl!,
     supabaseAnonKey!,
     {
@@ -573,4 +573,74 @@ export function createClient() {
       },
     }
   );
+
+  const mockClient = createMockServerClient();
+
+  const getActiveClient = async () => {
+    try {
+      const cookieStore = await cookies();
+      const isMock = cookieStore.get("mock_logged_in")?.value === "true";
+      return isMock ? mockClient : realClient;
+    } catch {
+      return realClient;
+    }
+  };
+
+  return new Proxy({} as any, {
+    get(_target, prop) {
+      if (prop === "auth") {
+        return new Proxy({} as any, {
+          get(_authTarget, authProp) {
+            return async (...args: any[]) => {
+              const client = await getActiveClient();
+              const method = (client.auth as any)[authProp];
+              if (typeof method === "function") {
+                return method.apply(client.auth, args);
+              }
+              return method;
+            };
+          }
+        });
+      }
+
+      if (prop === "from") {
+        return (tableName: string) => {
+          const queue: { method: string; args: any[] }[] = [];
+          const queryProxy = new Proxy({} as any, {
+            get(_queryTarget, queryProp) {
+              if (queryProp === "then") {
+                return async (resolve: any, reject: any) => {
+                  try {
+                    const client = await getActiveClient();
+                    let current: any = client.from(tableName);
+                    for (const step of queue) {
+                      current = current[step.method](...step.args);
+                    }
+                    return current.then(resolve, reject);
+                  } catch (err) {
+                    if (reject) reject(err);
+                  }
+                };
+              }
+              return (...args: any[]) => {
+                queue.push({ method: queryProp as string, args });
+                return queryProxy;
+              };
+            }
+          });
+          return queryProxy;
+        };
+      }
+
+      return (...args: any[]) => {
+        return getActiveClient().then((client: any) => {
+          const method = client[prop];
+          if (typeof method === "function") {
+            return method.apply(client, args);
+          }
+          return method;
+        });
+      };
+    }
+  }) as any;
 }

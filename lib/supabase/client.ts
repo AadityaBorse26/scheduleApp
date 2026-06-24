@@ -578,7 +578,20 @@ const mockSupabase = {
   }
 };
 
-export const supabase = isConfigured
-  ? createBrowserClient(supabaseUrl, supabaseAnonKey)
-  : (mockSupabase as any);
+const getClient = () => {
+  const useMock = !isConfigured || (typeof window !== 'undefined' && getCookie('mock_logged_in') === 'true');
+  return useMock ? mockSupabase : createBrowserClient(supabaseUrl!, supabaseAnonKey!);
+};
+
+export const supabase = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getClient();
+    const val = (client as any)[prop];
+    if (typeof val === 'function') {
+      return val.bind(client);
+    }
+    return val;
+  }
+}) as any;
+
 
